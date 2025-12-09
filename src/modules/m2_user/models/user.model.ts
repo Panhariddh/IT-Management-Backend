@@ -9,7 +9,7 @@ export class UserModel {
   @Column()
   name: string;
 
-  @Column({ name: 'stu_id' })
+  @Column({ name: 'user_id' })
   stuId: string;
 
   @Column({ unique: true })
