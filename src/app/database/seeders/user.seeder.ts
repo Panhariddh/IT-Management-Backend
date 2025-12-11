@@ -1,7 +1,8 @@
-import { UserModel } from '../../modules/m2_user/models/user.model';
-import { AppDataSource } from '../../config/data-source';
+import { UserModel } from '../models/user.model';
+
 import * as bcrypt from 'bcryptjs';
-import { Role } from 'src/common/enum/role.enum';
+import { Role } from 'src/app/common/enum/role.enum';
+import { AppDataSource } from 'src/app/config/data-source';
 
 export class UserSeeder {
   static async seed() {

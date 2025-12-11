@@ -4,9 +4,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Response } from 'express';
 
-import { UserModel } from 'src/modules/m2_user/models/user.model';
+
 import { JwtService } from '@nestjs/jwt';
-import jwtConstants from 'src/utils/jwt.constants';
+import jwtConstants from 'src/app/utils/jwt.constants';
+import { UserModel } from 'src/app/database/models/user.model';
 
 @Injectable()
 export class AuthService {

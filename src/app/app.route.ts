@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RouterModule } from '@nestjs/core'; 
-import { AuthModule } from 'src/shared/modules/auth.module';
+import { AuthModule } from 'src/app/resources/shared/modules/auth.module';
 
 @Module({
   imports: [

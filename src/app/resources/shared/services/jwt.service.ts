@@ -4,8 +4,9 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
-import { UserModel } from 'src/modules/m2_user/models/user.model';
-import jwtConstants from 'src/utils/jwt.constants';
+
+import jwtConstants from 'src/app/utils/jwt.constants';
+import { UserModel } from 'src/app/database/models/user.model';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -33,21 +34,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       where: { id: payload.userId },
       select: [
         'id',
-        'name',
-        'stuId',
+        'image',
+        'name_kh',
+        'name_en',
         'email',
         'phone',
         'gender',
-        'address',
         'dob',
-        'year',
-        'emergencyContact',
+        'address',
         'role',
+        'is_active',
+        'createdAt',
+        'updatedAt',
       ],
     });
 
-    if (!user) {
-      throw new UnauthorizedException('Unauthorized - User Not Found.');
+    if (!user || !user.is_active) {
+      throw new UnauthorizedException('Unauthorized - User not found or inactive.');
     }
 
     return user;
