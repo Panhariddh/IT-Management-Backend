@@ -3,6 +3,7 @@ import * as readlineSync from 'readline-sync';
 import { AppDataSource } from '../config/data-source';
 
 
+
 async function migrate() {
   try {
     await AppDataSource.initialize();
