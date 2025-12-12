@@ -1,6 +1,6 @@
 
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
-import { UserModel } from './user.model';
+import { UserModel } from '../user.model';
 
 
 @Entity('department')

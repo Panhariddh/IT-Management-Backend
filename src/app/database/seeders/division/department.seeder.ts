@@ -1,5 +1,5 @@
-import { DepartmentModel } from '../models/department.model';
-import { AppDataSource } from '../../config/data-source';
+import { DepartmentModel } from '../../models/division/department.model';
+import { AppDataSource } from '../../../config/data-source';
 
 export class DepartmentSeeder {
   static async seed() {

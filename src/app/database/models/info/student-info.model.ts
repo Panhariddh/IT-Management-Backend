@@ -1,8 +1,8 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
-import { UserModel } from './user.model';
-import { DepartmentModel } from './department.model';
-import { SectionModel } from './section.model';
-import { ProgramModel } from './program.model';
+import { UserModel } from '../user.model';
+import { DepartmentModel } from '../division/department.model';
+import { SectionModel } from '../division/section.model';
+import { ProgramModel } from '../division/program.model';
 
 @Entity('student_info')
 export class StudentInfoModel {

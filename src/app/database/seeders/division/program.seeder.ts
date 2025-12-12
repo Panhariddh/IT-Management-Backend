@@ -1,6 +1,6 @@
-import { ProgramModel } from '../models/program.model';
-import { DepartmentModel } from '../models/department.model';
-import { AppDataSource } from '../../config/data-source';
+import { ProgramModel } from '../../models/division/program.model';
+import { DepartmentModel } from '../../models/division/department.model';
+import { AppDataSource } from '../../../config/data-source';
 
 export class ProgramSeeder {
   static async seed() {

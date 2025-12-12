@@ -1,9 +1,9 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
-import { UserModel } from './user.model';
-import { DepartmentModel } from './department.model';
+import { UserModel } from '../user.model';
+import { DepartmentModel } from '../division/department.model';
 
-@Entity('teacher_info')
-export class TeacherInfoModel {
+@Entity('hod_info')
+export class HodInfoModel {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -14,17 +14,14 @@ export class TeacherInfoModel {
   @JoinColumn({ name: 'user_id' })
   user: UserModel;
 
-  @Column({ unique: true })
-  employee_number: string;
-
-  @Column({ nullable: true })
+  @Column()
   department_id: string;
 
-  @ManyToOne(() => DepartmentModel, { onDelete: 'SET NULL' })
-  department?: DepartmentModel;
+  @ManyToOne(() => DepartmentModel, { onDelete: 'CASCADE' })
+  department: DepartmentModel;
 
-  @Column({ nullable: true })
-  position: string;
+  @Column({ type: 'date', nullable: true })
+  appointed_date: Date;
 
   @Column({ default: true })
   is_active: boolean;

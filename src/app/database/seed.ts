@@ -2,9 +2,12 @@ import 'colors';
 import * as readlineSync from 'readline-sync';
 import { UserSeeder } from './seeders/user.seeder';
 import { AppDataSource } from '../config/data-source';
-import { DepartmentSeeder } from './seeders/department.seeder';
-import { ProgramSeeder } from './seeders/program.seeder';
-import { SectionSeeder } from './seeders/section.seeder';
+import { DepartmentSeeder } from './seeders/division/department.seeder';
+import { ProgramSeeder } from './seeders/division/program.seeder';
+import { SectionSeeder } from './seeders/division/section.seeder';
+import { TeacherInfoSeeder } from './seeders/info/teacher.info.seeder';
+import { StudentInfoSeeder } from './seeders/info/student.info.seeder';
+import { HodInfoSeeder } from './seeders/info/hod.info.seeder';
 
 async function seed() {
   try {
@@ -35,6 +38,9 @@ async function seed() {
      await DepartmentSeeder.seed();
     await ProgramSeeder.seed();
     await SectionSeeder.seed();
+    await HodInfoSeeder.seed();
+    await StudentInfoSeeder.seed();
+    await TeacherInfoSeeder.seed();
 
     console.log("\nSeed completed successfully.".green);
     process.exit(0);

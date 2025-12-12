@@ -1,6 +1,6 @@
-import { SectionModel } from '../models/section.model';
-import { DepartmentModel } from '../models/department.model';
-import { AppDataSource } from '../../config/data-source';
+import { SectionModel } from '../../models/division/section.model';
+import { DepartmentModel } from '../../models/division/department.model';
+import { AppDataSource } from '../../../config/data-source';
 
 export class SectionSeeder {
   static async seed() {
