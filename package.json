@@ -19,7 +19,7 @@
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "migrate": "ts-node -r tsconfig-paths/register ./src/app/database/migrate.ts",
-    "seeder": "ts-node -r tsconfig-paths/register ./src/database/seed.ts"
+    "seeder": "ts-node -r tsconfig-paths/register ./src/app/database/seed.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",
