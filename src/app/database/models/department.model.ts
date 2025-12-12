@@ -12,7 +12,7 @@ export class DepartmentModel {
   name: string;
 
   @Column({ nullable: true })
-  head_user_id: string;
+  head_user_id: string | null;
 
   @OneToOne(() => UserModel)
   @JoinColumn({ name: 'head_user_id' })

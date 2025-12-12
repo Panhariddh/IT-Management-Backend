@@ -2,6 +2,9 @@ import 'colors';
 import * as readlineSync from 'readline-sync';
 import { UserSeeder } from './seeders/user.seeder';
 import { AppDataSource } from '../config/data-source';
+import { DepartmentSeeder } from './seeders/department.seeder';
+import { ProgramSeeder } from './seeders/program.seeder';
+import { SectionSeeder } from './seeders/section.seeder';
 
 async function seed() {
   try {
@@ -29,6 +32,9 @@ async function seed() {
 
     // Seed
     await UserSeeder.seed();
+     await DepartmentSeeder.seed();
+    await ProgramSeeder.seed();
+    await SectionSeeder.seed();
 
     console.log("\nSeed completed successfully.".green);
     process.exit(0);
