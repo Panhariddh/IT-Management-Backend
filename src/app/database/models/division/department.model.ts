@@ -1,6 +1,6 @@
 
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
-import { UserModel } from './user.model';
+import { UserModel } from '../user.model';
 
 
 @Entity('department')
@@ -12,7 +12,7 @@ export class DepartmentModel {
   name: string;
 
   @Column({ nullable: true })
-  head_user_id: string;
+  head_user_id: string | null;
 
   @OneToOne(() => UserModel)
   @JoinColumn({ name: 'head_user_id' })

@@ -1,6 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
-import { UserModel } from './user.model';
-import { DepartmentModel } from './department.model';
+import { UserModel } from '../user.model';
+import { DepartmentModel } from '../division/department.model';
 
 @Entity('hod_info')
 export class HodInfoModel {
