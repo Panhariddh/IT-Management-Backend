@@ -15,7 +15,7 @@ export class HodInfoModel {
   user: UserModel;
 
   @Column()
-  department_id: string;
+  department_id: number;
 
   @ManyToOne(() => DepartmentModel, { onDelete: 'CASCADE' })
   department: DepartmentModel;

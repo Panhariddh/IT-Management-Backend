@@ -10,11 +10,12 @@ export class SectionSeeder {
     const departments = await deptRepo.find();
 
     const sections = [
-      { name: 'CS-A', departmentName: 'Computer Science' },
-      { name: 'CS-B', departmentName: 'Computer Science' },
-      { name: 'Math-A', departmentName: 'Mathematics' },
-      { name: 'Physics-A', departmentName: 'Physics' },
-    ];
+  { name: 'General Medicine', departmentName: 'Faculty of Medicine' },
+  { name: 'Software Engineering', departmentName: 'Faculty of Engineering' },
+  { name: 'Finance and Banking', departmentName: 'Faculty of Business' },
+  { name: 'International Relations', departmentName: 'Faculty of Social Sciences' },
+  { name: 'Computer Science', departmentName: 'Faculty of Science' },
+];
 
     for (const sec of sections) {
       const dept = departments.find(d => d.name === sec.departmentName);

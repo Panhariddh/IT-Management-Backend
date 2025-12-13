@@ -3,14 +3,14 @@ import { DepartmentModel } from './department.model';
 
 @Entity('section')
 export class SectionModel {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+    @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   name: string;
 
   @Column()
-  department_id: string;
+  department_id: number;
 
   @ManyToOne(() => DepartmentModel, { onDelete: 'CASCADE' })
   department: DepartmentModel;

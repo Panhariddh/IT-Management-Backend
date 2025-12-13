@@ -17,8 +17,8 @@ export class TeacherInfoModel {
   @Column({ unique: true })
   employee_number: string;
 
-  @Column({ name: 'department_id', type: 'uuid', nullable: true })
-  department_id?: string | null;
+  @Column({ name: 'department_id', type: 'int', nullable: true }) 
+  department_id?: number | null;
 
   @ManyToOne(() => DepartmentModel, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'department_id' })
