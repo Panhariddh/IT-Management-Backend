@@ -32,18 +32,21 @@ export class StudentInfoModel {
   department_id: number;
 
   @ManyToOne(() => DepartmentModel, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'department_id' })  
   department: DepartmentModel;
 
   @Column()
   section_id: number;
 
   @ManyToOne(() => SectionModel, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'section_id' })      
   section: SectionModel;
 
   @Column()
   program_id: number;
 
   @ManyToOne(() => ProgramModel, { onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'program_id' })    
   program: ProgramModel;
 
   @Column({ default: true })
