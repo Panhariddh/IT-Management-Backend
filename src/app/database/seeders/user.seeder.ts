@@ -1,9 +1,8 @@
 import { UserModel } from '../models/user.model';
 import * as bcrypt from 'bcryptjs';
 import { Role } from '../../common/enum/role.enum';
-
 import { AppDataSource } from '../../config/data-source';
-
+import * as path from 'path';
 
 export class UserSeeder {
   static async seed() {
@@ -15,9 +14,12 @@ export class UserSeeder {
       return bcrypt.hash(plainText, saltRounds);
     };
 
+    // Default avatar path
+    const defaultAvatar = path.join('src', 'public', 'images', 'avatar.jpg');
+
     const users = [
       {
-        image: 'https://upload-os-bbs.hoyolab.com/upload/2023/04/12/296858782/0ace090053e6c8c1266fa3cd00364654_7217898425771256910.jpg', 
+        image: defaultAvatar,
         name_kh: 'អភិបាលប្រព័ន្ធ', 
         name_en: 'Admin', 
         email: 'admin@example.com',
@@ -30,7 +32,7 @@ export class UserSeeder {
         is_active: true, 
       },
       {
-        image: 'https://i.pinimg.com/736x/4c/9e/2e/4c9e2e7524b88a4d27222c245be24820.jpg',
+        image: defaultAvatar,
         name_kh: 'ថាយណារី',
         name_en: 'Tighnari',
         email: 'hod@example.com',
@@ -43,7 +45,7 @@ export class UserSeeder {
         is_active: true,
       },
       {
-        image: 'https://i.pinimg.com/736x/92/7c/e8/927ce89ed61381dbdf03ae7d84469346.jpg',
+        image: defaultAvatar,
         name_kh: 'ហ្លីន',
         name_en: 'Flins',
         email: 'teacher@example.com',
@@ -55,18 +57,36 @@ export class UserSeeder {
         role: Role.TEACHER,
         is_active: true,
       },
+      // Student users (use default avatar if none provided)
       {
-        image: 'https://i.pinimg.com/736x/6e/17/33/6e1733e7547da9618c9c1c07751a99fb.jpg',
-        name_kh: 'ក្លរីន',
-        name_en: 'Clorinde',
-        email: 'student@example.com',
-        password: await hashPassword('123456'),
-        phone: '012345681',
-        gender: 'Female',
-        address: 'Phnom Penh',
-        dob: new Date('2003-11-10'),
-        role: Role.STUDENT,
-        is_active: true,
+        image: defaultAvatar,
+        name_kh: 'លុង សុធានី', name_en: 'Long Sothany', email: 'student1@example.com',
+        password: await hashPassword('123456'), role: Role.STUDENT, gender: 'Male',
+        dob: new Date('2004-02-20'), phone: '012345682', address: 'Phnom Penh', is_active: true,
+      },
+      {
+        image: defaultAvatar,
+        name_kh: 'ស៊ុន សៀងហាក', name_en: 'Sun Sienghak', email: 'student2@example.com',
+        password: await hashPassword('123456'), role: Role.STUDENT, gender: 'Female',
+        dob: new Date('2003-08-15'), phone: '012345683', address: 'Phnom Penh', is_active: true,
+      },
+      {
+        image: defaultAvatar,
+        name_kh: 'មាស សុផល', name_en: 'Meas Sophal', email: 'student3@example.com',
+        password: await hashPassword('123456'), role: Role.STUDENT, gender: 'Male',
+        dob: new Date('2005-11-03'), phone: '012345684', address: 'Phnom Penh', is_active: true,
+      },
+      {
+        image: defaultAvatar,
+        name_kh: 'ឃួន ចាន់ណារី', name_en: 'Khun Channary', email: 'student4@example.com',
+        password: await hashPassword('123456'), role: Role.STUDENT, gender: 'Female',
+        dob: new Date('2004-05-30'), phone: '012345685', address: 'Phnom Penh', is_active: true,
+      },
+      {
+        image: defaultAvatar,
+        name_kh: 'ហេង វីរៈ', name_en: 'Heng Virak', email: 'student5@example.com',
+        password: await hashPassword('123456'), role: Role.STUDENT, gender: 'Male',
+        dob: new Date('2003-12-12'), phone: '012345686', address: 'Phnom Penh', is_active: true,
       },
     ];
 
@@ -78,6 +98,6 @@ export class UserSeeder {
       }
     }
 
-    console.log('✅ UserSeeder completed with 4 roles.');
+    console.log('✅ UserSeeder completed with default avatar applied.');
   }
 }

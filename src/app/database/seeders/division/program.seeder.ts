@@ -9,13 +9,13 @@ export class ProgramSeeder {
 
     const departments = await deptRepo.find();
 
-    const programs = [
-      { name: 'Software Engineering', departmentName: 'Computer Science' },
-      { name: 'Data Science', departmentName: 'Computer Science' },
-      { name: 'Applied Mathematics', departmentName: 'Mathematics' },
-      { name: 'Theoretical Physics', departmentName: 'Physics' },
-    ];
-
+  const programs = [
+  { name: 'General Medicine', departmentName: 'Faculty of Medicine' },
+  { name: 'Software Engineering', departmentName: 'Faculty of Engineering' },
+  { name: 'Finance and Banking', departmentName: 'Faculty of Business' },
+  { name: 'International Relations', departmentName: 'Faculty of Social Sciences' },
+  { name: 'Computer Science', departmentName: 'Faculty of Science' },
+];
     for (const prog of programs) {
       const dept = departments.find(d => d.name === prog.departmentName);
       if (!dept) continue;

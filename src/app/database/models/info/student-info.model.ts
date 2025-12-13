@@ -29,19 +29,19 @@ export class StudentInfoModel {
   academic_year: string;
 
   @Column()
-  department_id: string;
+  department_id: number;
 
   @ManyToOne(() => DepartmentModel, { onDelete: 'RESTRICT' })
   department: DepartmentModel;
 
   @Column()
-  section_id: string;
+  section_id: number;
 
   @ManyToOne(() => SectionModel, { onDelete: 'RESTRICT' })
   section: SectionModel;
 
   @Column()
-  program_id: string;
+  program_id: number;
 
   @ManyToOne(() => ProgramModel, { onDelete: 'RESTRICT' })
   program: ProgramModel;

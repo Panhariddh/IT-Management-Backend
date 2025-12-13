@@ -1,12 +1,11 @@
-
 import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn } from 'typeorm';
 import { UserModel } from '../user.model';
 
-
 @Entity('department')
 export class DepartmentModel {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+  // Use auto-increment integer ID
+  @PrimaryGeneratedColumn()
+  id: number;
 
   @Column()
   name: string;
