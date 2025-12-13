@@ -34,6 +34,6 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('check')
   checkAuth(@Req() req: Request) {
-    return req.user; // Populated by JwtStrategy
+    return req.user; 
   }
 }
