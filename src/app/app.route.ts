@@ -1,19 +1,19 @@
 import { Module } from '@nestjs/common';
 import { RouterModule } from '@nestjs/core'; 
-import { AuthModule } from 'src/app/resources/shared/modules/auth.module';
+import { AuthModule } from 'src/app/resources/auth/auth.module';
+import { AdminModule } from './resources/admin/admin.module';
 
 @Module({
   imports: [
     RouterModule.register([
-      {
-        path: 'auth',
-        module: AuthModule,
-      },
-      // Add more feature modules here:
-      // {
-      //   path: 'api/users',
-      //   module: UserModule,
-      // },
+       {
+    path: 'admin',
+    module: AdminModule,
+  },
+  {
+    path: 'auth',
+    module: AuthModule,
+  },
     ]),
   ],
   exports: [RouterModule],
