@@ -8,6 +8,7 @@ import { SectionSeeder } from './seeders/division/section.seeder';
 import { TeacherInfoSeeder } from './seeders/info/teacher.info.seeder';
 import { StudentInfoSeeder } from './seeders/info/student.info.seeder';
 import { HodInfoSeeder } from './seeders/info/hod.info.seeder';
+import { AcademicYearSeeder } from './seeders/academic.year.seeder';
 
 async function seed() {
   try {
@@ -30,7 +31,7 @@ async function seed() {
       }
     }
 
-    await AppDataSource.synchronize(true); // drop + recreate tables
+    await AppDataSource.synchronize(true); 
     console.log("\nSeeding tables…".green);
 
     // Seed
@@ -38,6 +39,7 @@ async function seed() {
      await DepartmentSeeder.seed();
     await ProgramSeeder.seed();
     await SectionSeeder.seed();
+    await AcademicYearSeeder.seed();
     await HodInfoSeeder.seed();
     await StudentInfoSeeder.seed();
     await TeacherInfoSeeder.seed();

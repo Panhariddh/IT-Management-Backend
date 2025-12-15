@@ -8,7 +8,13 @@ import { UserModel } from 'src/app/database/models/user.model';
 import { DepartmentModel } from 'src/app/database/models/division/department.model';
 import { SectionModel } from 'src/app/database/models/division/section.model';
 import { ProgramModel } from 'src/app/database/models/division/program.model';
-import { DataSetupDto, MetaDto, StudentDetailDto, StudentDto } from './students.dto';
+import {
+  DataSetupDto,
+  MetaDto,
+  StudentDetailDto,
+  StudentDto,
+} from './students.dto';
+import { AcademicYearModel } from 'src/app/database/models/academic.year.model';
 
 interface GetAllStudentsParams {
   page: number;
@@ -16,6 +22,7 @@ interface GetAllStudentsParams {
   departmentId?: number;
   sectionId?: number;
   programId?: number;
+  academicYearId?: number;
   gender?: string;
   search?: string;
   sortBy: string;
@@ -41,19 +48,24 @@ export class StudentService {
     private sectionRepository: Repository<SectionModel>,
     @InjectRepository(ProgramModel)
     private programRepository: Repository<ProgramModel>,
+    @InjectRepository(AcademicYearModel)
+    private academicYearRepository: Repository<AcademicYearModel>,
   ) {}
 
-  async getAllStudents(params: GetAllStudentsParams): Promise<GetAllStudentsResult> {
-    const { 
-      page, 
-      limit, 
-      departmentId, 
-      sectionId, 
-      programId, 
-      gender, 
+  async getAllStudents(
+    params: GetAllStudentsParams,
+  ): Promise<GetAllStudentsResult> {
+    const {
+      page,
+      limit,
+      departmentId,
+      sectionId,
+      programId,
+      academicYearId,
+      gender,
       search,
       sortBy,
-      sortOrder 
+      sortOrder,
     } = params;
     const skip = (page - 1) * limit;
 
@@ -62,6 +74,7 @@ export class StudentService {
       .createQueryBuilder('student')
       .innerJoinAndSelect('student.user', 'user')
       .leftJoinAndSelect('student.department', 'department')
+      .leftJoinAndSelect('student.academicYear', 'academicYear')
       .leftJoinAndSelect('student.section', 'section')
       .leftJoinAndSelect('student.program', 'program')
       .where('user.role = :role', { role: Role.STUDENT })
@@ -86,6 +99,12 @@ export class StudentService {
       query.andWhere('student.program_id = :programId', { programId });
     }
 
+    if (academicYearId) {
+      query.andWhere('student.academic_year_id = :academicYearId', {
+        academicYearId,
+      });
+    }
+
     // Apply search filter (only for id, name_kh, name_en)
     if (search) {
       // Clean search term - remove extra spaces and wildcards
@@ -103,14 +122,11 @@ export class StudentService {
     const total = await query.getCount();
 
     // Get paginated results
-    const studentInfos = await query
-      .skip(skip)
-      .take(limit)
-      .getMany();
+    const studentInfos = await query.skip(skip).take(limit).getMany();
 
     // Transform to DTO
     const students: StudentDto[] = studentInfos.map((student) => ({
-    id: student.id,
+      id: student.id,
       student_id: student.student_id,
       name_kh: student.user.name_kh,
       name_en: student.user.name_en,
@@ -121,7 +137,7 @@ export class StudentService {
       program: student.program?.name || '',
       grade: student.grade,
       student_year: student.student_year,
-      academic_year: student.academic_year,
+      academic_year: student.academicYear?.name || '',
     }));
 
     // Get data setup
@@ -140,17 +156,18 @@ export class StudentService {
     };
   }
 
-    async getStudentById(id: string): Promise<StudentDetailDto> {
+  async getStudentById(id: string): Promise<StudentDetailDto> {
     let studentInfo = await this.studentInfoRepository.findOne({
       where: [
         { student_id: id, is_active: true },
-        { id: id, is_active: true }
+        { id: id, is_active: true },
       ],
       relations: {
         user: true,
         department: true,
         section: true,
         program: true,
+        academicYear: true,
       },
     });
 
@@ -163,6 +180,7 @@ export class StudentService {
           department: true,
           section: true,
           program: true,
+          academicYear: true,
         },
       });
     }
@@ -192,7 +210,7 @@ export class StudentService {
       program: studentInfo.program?.name || '',
       grade: studentInfo.grade,
       student_year: studentInfo.student_year,
-      academic_year: studentInfo.academic_year,
+      academic_year: studentInfo.academicYear?.name || '',
       department_id: studentInfo.department_id,
       section_id: studentInfo.section_id,
       program_id: studentInfo.program_id,
@@ -201,7 +219,11 @@ export class StudentService {
     };
   }
 
-  private applySorting(query: any, sortBy: string, sortOrder: 'ASC' | 'DESC'): void {
+  private applySorting(
+    query: any,
+    sortBy: string,
+    sortOrder: 'ASC' | 'DESC',
+  ): void {
     switch (sortBy) {
       case 'name_en':
         query.orderBy('user.name_en', sortOrder);
@@ -221,31 +243,31 @@ export class StudentService {
 
   private formatDate(date: any): string {
     if (!date) return '';
-    
+
     if (date instanceof Date) {
       return date.toISOString().split('T')[0];
     }
-    
+
     if (typeof date === 'string') {
       // If it's already in YYYY-MM-DD format
       if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return date;
       }
-      
+
       // Try to parse it
       const parsed = new Date(date);
       if (!isNaN(parsed.getTime())) {
         return parsed.toISOString().split('T')[0];
       }
-      
+
       return date;
     }
-    
+
     return String(date);
   }
 
   private async getDataSetup(): Promise<DataSetupDto> {
-    const [departments, sections, programs] = await Promise.all([
+    const [departments, sections, programs, academicYears] = await Promise.all([
       this.departmentRepository.find({
         select: ['id', 'name'],
         order: { name: 'ASC' },
@@ -258,12 +280,17 @@ export class StudentService {
         select: ['id', 'name', 'department_id'],
         order: { name: 'ASC' },
       }),
+      this.academicYearRepository.find({
+        select: ['id', 'name', 'isActive'],
+        order: { name: 'DESC' }, // latest academic year first
+      }),
     ]);
 
     return {
       departments,
       sections,
       programs,
+      academic_years: academicYears, // ✅ matches DTO
     };
   }
 
@@ -278,6 +305,6 @@ export class StudentService {
       .orderBy('user.gender', 'ASC')
       .getRawMany();
 
-    return genders.map(g => g.gender).filter(g => g);
+    return genders.map((g) => g.gender).filter((g) => g);
   }
 }

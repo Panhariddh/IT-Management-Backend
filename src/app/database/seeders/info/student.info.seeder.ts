@@ -5,6 +5,7 @@ import { DepartmentModel } from "../../models/division/department.model";
 import { SectionModel } from "../../models/division/section.model";
 import { ProgramModel } from "../../models/division/program.model";
 import { Role } from "src/app/common/enum/role.enum";
+import { AcademicYearModel } from "../../models/academic.year.model";
 
 export class StudentInfoSeeder {
   static async seed() {
@@ -13,111 +14,106 @@ export class StudentInfoSeeder {
     const deptRepo = AppDataSource.getRepository(DepartmentModel);
     const sectionRepo = AppDataSource.getRepository(SectionModel);
     const programRepo = AppDataSource.getRepository(ProgramModel);
+    const academicYearRepo = AppDataSource.getRepository(AcademicYearModel);
 
-    // Get student users
-    const studentUsers = await userRepo.find({ 
-      where: { role: Role.STUDENT },
-      order: { id: 'ASC' }
+    // 🔹 Get current academic year
+    const currentAcademicYear = await academicYearRepo.findOne({
+      where: { isActive: true },
     });
 
-    // Get all departments, sections, and programs
+    if (!currentAcademicYear) {
+      throw new Error('❌ No active academic year found.');
+    }
+
+    // Get student users
+    const studentUsers = await userRepo.find({
+      where: { role: Role.STUDENT },
+      order: { id: 'ASC' },
+    });
+
     const departments = await deptRepo.find();
     const sections = await sectionRepo.find();
     const programs = await programRepo.find();
 
-    // Create lookup maps
-    const deptMap = new Map(departments.map(dept => [dept.name, dept.id]));
-    const sectionMap = new Map(sections.map(sec => [sec.name, sec.id]));
-    const programMap = new Map(programs.map(prog => [prog.name, prog.id]));
+    const deptMap = new Map(departments.map(d => [d.name, d.id]));
+    const sectionMap = new Map(sections.map(s => [s.name, s.id]));
+    const programMap = new Map(programs.map(p => [p.name, p.id]));
 
-    // Student data with IDs
     const studentsData = [
-      { 
-        student_id: 'e20250001', 
-        departmentName: 'Faculty of Medicine', 
-        sectionName: 'General Medicine', 
+      {
+        student_id: 'e20250001',
+        departmentName: 'Faculty of Medicine',
+        sectionName: 'General Medicine',
         programName: 'General Medicine',
-        grade: 'A', 
-        student_year: 1, 
-        academic_year: '2025-2026' 
+        grade: 'A',
+        student_year: 1,
       },
-      { 
-        student_id: 'e20250002', 
-        departmentName: 'Faculty of Engineering', 
-        sectionName: 'Software Engineering', 
+      {
+        student_id: 'e20250002',
+        departmentName: 'Faculty of Engineering',
+        sectionName: 'Software Engineering',
         programName: 'Software Engineering',
-        grade: 'B', 
-        student_year: 1, 
-        academic_year: '2025-2026' 
+        grade: 'B',
+        student_year: 1,
       },
-      { 
-        student_id: 'e20250003', 
-        departmentName: 'Faculty of Business', 
-        sectionName: 'Finance and Banking', 
+      {
+        student_id: 'e20250003',
+        departmentName: 'Faculty of Business',
+        sectionName: 'Finance and Banking',
         programName: 'Finance and Banking',
-        grade: 'A', 
-        student_year: 1, 
-        academic_year: '2025-2026' 
+        grade: 'A',
+        student_year: 1,
       },
-      { 
-        student_id: 'e20250004', 
-        departmentName: 'Faculty of Social Sciences', 
-        sectionName: 'International Relations', 
+      {
+        student_id: 'e20250004',
+        departmentName: 'Faculty of Social Sciences',
+        sectionName: 'International Relations',
         programName: 'International Relations',
-        grade: 'B', 
-        student_year: 1, 
-        academic_year: '2025-2026' 
+        grade: 'B',
+        student_year: 1,
       },
-      { 
-        student_id: 'e20250005', 
-        departmentName: 'Faculty of Science', 
-        sectionName: 'Computer Science', 
+      {
+        student_id: 'e20250005',
+        departmentName: 'Faculty of Science',
+        sectionName: 'Computer Science',
         programName: 'Computer Science',
-        grade: 'A', 
-        student_year: 1, 
-        academic_year: '2025-2026' 
+        grade: 'A',
+        student_year: 1,
       },
     ];
 
-    // Seed student info
     for (let i = 0; i < Math.min(studentUsers.length, studentsData.length); i++) {
       const user = studentUsers[i];
       const data = studentsData[i];
 
-      // Get IDs from maps
       const departmentId = deptMap.get(data.departmentName);
       const sectionId = sectionMap.get(data.sectionName);
       const programId = programMap.get(data.programName);
 
       if (!departmentId || !sectionId || !programId) {
-        console.log(`Skipping ${user.name_en}: missing department, section or program`);
+        console.log(`⚠️ Skipping ${user.name_en}: missing relation`);
         continue;
       }
 
-      // Check if student info already exists
-      const existingInfo = await repo.findOne({ 
-        where: { user_id: user.id } 
+      const existing = await repo.findOne({
+        where: { user_id: user.id },
       });
 
-      if (!existingInfo) {
-        // Create student info with IDs
+      if (!existing) {
         const studentInfo = repo.create({
           user_id: user.id,
           student_id: data.student_id,
           grade: data.grade,
           student_year: data.student_year,
-          academic_year: data.academic_year,
-          department_id: departmentId,  // Save the ID
-          section_id: sectionId,        // Save the ID
-          program_id: programId,        // Save the ID
+          academic_year_id: currentAcademicYear.id,
+          department_id: departmentId,
+          section_id: sectionId,
+          program_id: programId,
           is_active: true,
-          createdAt: new Date(),
         });
 
         await repo.save(studentInfo);
-        console.log(`✅ Created student info for ${user.name_en} (${data.student_id})`);
-      } else {
-        console.log(`⚠️  Student info already exists for ${user.name_en}`);
+        console.log(`✅ Created student info for ${user.name_en}`);
       }
     }
 
