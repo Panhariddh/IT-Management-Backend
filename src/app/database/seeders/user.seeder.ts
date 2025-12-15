@@ -66,9 +66,9 @@ export class UserSeeder {
       },
       {
         image: defaultAvatar,
-        name_kh: 'ស៊ុន សៀងហាក', name_en: 'Sun Sienghak', email: 'student2@example.com',
+        name_kh: 'ហួ ម៉េងលី', name_en: 'Hou Mengly', email: 'student2@example.com',
         password: await hashPassword('123456'), role: Role.STUDENT, gender: 'Female',
-        dob: new Date('2003-08-15'), phone: '012345683', address: 'Phnom Penh', is_active: true,
+        dob: new Date('2003-10-16'), phone: '095266386', address: 'Phnom Penh', is_active: true,
       },
       {
         image: defaultAvatar,
