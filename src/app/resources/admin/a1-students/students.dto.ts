@@ -10,9 +10,8 @@ id: string;
   program?: string;
   grade?: string;
   student_year?: number;
-  academic_year?: string;
+  academic_year?: string; 
 }
-
 export class StudentDetailDto extends StudentDto {
   email: string;
   phone: string;
@@ -29,6 +28,7 @@ export class DataSetupDto {
   departments: Array<{ id: number; name: string }>;
   sections: Array<{ id: number; name: string; department_id: number }>;
   programs: Array<{ id: number; name: string; department_id: number }>;
+  academic_years: Array<{ id: number; name: string; isActive: boolean }>;
 }
 
 export class MetaDto {

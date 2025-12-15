@@ -7,6 +7,7 @@ import { StudentInfoModel } from 'src/app/database/models/info/student-info.mode
 import { UserModel } from 'src/app/database/models/user.model';
 import { StudentController } from './students.controller';
 import { StudentService } from './students.service';
+import { AcademicYearModel } from 'src/app/database/models/academic.year.model';
 
 
 @Module({
@@ -17,6 +18,7 @@ import { StudentService } from './students.service';
       DepartmentModel,
       SectionModel,
       ProgramModel,
+      AcademicYearModel,
     ]),
   ],
   controllers: [StudentController],
