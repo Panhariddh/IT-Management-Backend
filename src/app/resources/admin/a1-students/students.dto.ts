@@ -1,3 +1,81 @@
+import { IsNotEmpty, IsOptional, IsString, IsEmail, IsNumber, IsEnum, IsDateString } from 'class-validator';
+export class CreateStudentDto {
+  @IsNotEmpty()
+  @IsString()
+  student_id: string;
+
+  @IsNotEmpty()
+  @IsString()
+  name_kh: string;
+
+  @IsNotEmpty()
+  @IsString()
+  name_en: string;
+
+  @IsNotEmpty()
+  @IsEmail()
+  email: string;
+
+  @IsNotEmpty()
+  @IsString()
+  password: string;
+
+  @IsNotEmpty()
+  @IsString()
+  phone: string;
+
+  @IsNotEmpty()
+  @IsEnum(['Male', 'Female'])
+  gender: string;
+
+  @IsNotEmpty()
+  @IsDateString()
+  dob: string;
+
+  @IsNotEmpty()
+  @IsString()
+  address: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  department_id: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  section_id: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  program_id: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  academic_year_id: number;
+
+  @IsNotEmpty()
+  @IsString()
+  grade: string;
+
+  @IsNotEmpty()
+  @IsNumber()
+  student_year: number;
+
+  @IsOptional()
+  image?: any;
+}
+
+// Add this response DTO
+export class CreateStudentResponseDto {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    student_id: string;
+    name_en: string;
+    name_kh: string;
+    email: string;
+  };
+}
 export class StudentDto {
 id: string;
   student_id: string;
@@ -44,3 +122,6 @@ export class StudentsResponseDto {
   data_setup: DataSetupDto;
   meta: MetaDto;
 }
+
+
+
