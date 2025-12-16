@@ -152,61 +152,63 @@ export class StudentController {
   }
 
   // Create a new student
-  @Post()
-  @UseInterceptors(FileInterceptor('image'))
-  async createStudent(
-    @Body() createStudentDto: CreateStudentDto,
-    @UploadedFile() imageFile?: Express.Multer.File,
-  ): Promise<CreateStudentResponseDto> {
-    try {
-      // Validate file type if image is provided
-      if (imageFile) {
-        const allowedMimeTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-          'image/gif',
-        ];
-        if (!allowedMimeTypes.includes(imageFile.mimetype)) {
-          throw new BadRequestException(
-            'Invalid image format. Allowed: JPEG, PNG, JPG, GIF',
-          );
-        }
-
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (imageFile.size > maxSize) {
-          throw new BadRequestException(
-            'Image size too large. Maximum size is 5MB',
-          );
-        }
+@Post()
+@UseInterceptors(FileInterceptor('image'))
+async createStudent(
+  @Body() createStudentDto: CreateStudentDto,
+  @UploadedFile() imageFile?: Express.Multer.File,
+): Promise<CreateStudentResponseDto> {
+  try {
+    // Validate file type if image is provided
+    if (imageFile) {
+      const allowedMimeTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/jpg',
+        'image/gif',
+      ];
+      if (!allowedMimeTypes.includes(imageFile.mimetype)) {
+        throw new BadRequestException(
+          'Invalid image format. Allowed: JPEG, PNG, JPG, GIF',
+        );
       }
 
-      const student = await this.studentService.createStudent(
-        createStudentDto,
-        imageFile,
-      );
-
-      return {
-        success: true,
-        message: 'Student created successfully',
-        data: student,
-      };
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
+      // Validate file size (max 5MB)
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (imageFile.size > maxSize) {
+        throw new BadRequestException(
+          'Image size too large. Maximum size is 5MB',
+        );
       }
-
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Failed to create student',
-          error: error.message,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
     }
+
+    const student = await this.studentService.createStudent(
+      createStudentDto,
+      imageFile,
+    );
+
+    return {
+      success: true,
+      message: 'Student created successfully',
+      data: {
+        ...student,
+      },
+    };
+  } catch (error) {
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+
+    throw new HttpException(
+      {
+        success: false,
+        message: 'Failed to create student',
+        error: error.message,
+      },
+      HttpStatus.BAD_REQUEST,
+    );
   }
+}
 
   // Soft delete student
   @Delete(':id')
@@ -244,40 +246,4 @@ export class StudentController {
     }
   }
 
-  // Permanent delete student
-  @Delete(':id/permanent')
-  @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
-  async permanentDeleteStudent(@Param('id') id: string): Promise<{
-    success: boolean;
-    message: string;
-  }> {
-    try {
-      const result = await this.studentService.permanentDeleteStudent(id);
-
-      return {
-        success: true,
-        message: result.message,
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new HttpException(
-          {
-            success: false,
-            message: error.message,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Failed to permanently delete student',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
 }

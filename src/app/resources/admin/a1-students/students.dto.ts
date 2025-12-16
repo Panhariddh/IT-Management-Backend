@@ -53,10 +53,6 @@ export class CreateStudentDto {
   academic_year_id: number;
 
   @IsNotEmpty()
-  @IsString()
-  grade: string;
-
-  @IsNotEmpty()
   @IsNumber()
   student_year: number;
 
@@ -74,6 +70,7 @@ export class CreateStudentResponseDto {
     name_en: string;
     name_kh: string;
     email: string;
+    academic_year: string; 
   };
 }
 export class StudentDto {

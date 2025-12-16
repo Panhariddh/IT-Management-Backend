@@ -312,6 +312,103 @@ export class StudentService {
     return genders.map((g) => g.gender).filter((g) => g);
   }
 
+  async getNextStudentId(): Promise<string> {
+    const activeAcademicYear = await this.academicYearRepository.findOne({
+      where: { isActive: true },
+    });
+
+    if (!activeAcademicYear) {
+      throw new NotFoundException('No active academic year found');
+    }
+
+    // Extract ENDING year (2025 from "2024-2025")
+    const yearMatch = activeAcademicYear.name.match(/(\d{4})-(\d{4})/);
+    if (!yearMatch) {
+      throw new Error('Invalid academic year format. Expected: YYYY-YYYY');
+    }
+    const year = yearMatch[2]; // 2025
+
+    // Find highest student number for this year
+    const students = await this.studentInfoRepository
+      .createQueryBuilder('student')
+      .where('student.academic_year_id = :academicYearId', {
+        academicYearId: activeAcademicYear.id,
+      })
+      .andWhere('student.student_id LIKE :pattern', {
+        pattern: `e${year}%`,
+      })
+      .getMany();
+
+    let maxNumber = 0;
+
+    students.forEach((student) => {
+      const id = student.student_id;
+
+      if (id.startsWith(`e${year}`)) {
+        // Extract the number part (everything after "e2025")
+        const numberPart = id.slice(5); // After "e2025"
+
+        const number = parseInt(numberPart, 10);
+        if (!isNaN(number)) {
+          console.log(`Parsed number: ${number}`);
+          if (number > maxNumber) {
+            maxNumber = number;
+            console.log(`New max number: ${maxNumber}`);
+          }
+        }
+      }
+    });
+
+    const nextNumber = maxNumber + 1;
+    console.log(`Next number to use: ${nextNumber}`);
+
+    // DECIDE: How many digits do you want?
+    // Option 1: 4 digits (e20250006) - Supports up to 9999 students
+    // Option 2: 3 digits (e2025006) - Supports up to 999 students
+
+    // Based on your expected output "e20250006", you want 4 digits
+    const digitCount = 4; // Change to 3 if you want e2025006 format
+    const maxStudents = Math.pow(10, digitCount) - 1;
+
+    if (nextNumber > maxStudents) {
+      throw new Error(
+        `Maximum student limit (${maxStudents}) reached for this academic year`,
+      );
+    }
+
+    // Format with proper padding
+    const formattedNumber = nextNumber.toString().padStart(digitCount, '0');
+    const newStudentId = `e${year}${formattedNumber}`;
+
+    console.log(
+      `Formatted number: ${formattedNumber}, New student ID: ${newStudentId}`,
+    );
+
+    // Final uniqueness check
+    const exists = await this.studentInfoRepository.findOne({
+      where: { student_id: newStudentId },
+    });
+
+    if (exists) {
+      throw new Error(`Student ID ${newStudentId} already exists. Try again.`);
+    }
+
+    return newStudentId;
+  }
+
+  async getActiveAcademicYear(): Promise<AcademicYearModel> {
+    // Get active academic year from database
+    const activeAcademicYear = await this.academicYearRepository.findOne({
+      where: { isActive: true },
+    });
+
+    if (!activeAcademicYear) {
+      throw new NotFoundException('No active academic year found');
+    }
+
+    return activeAcademicYear;
+  }
+
   async createStudent(
     createStudentDto: CreateStudentDto,
     imageFile?: Express.Multer.File,
@@ -321,27 +418,31 @@ export class StudentService {
     name_en: string;
     name_kh: string;
     email: string;
+    academic_year: string;
   }> {
+    // Get active academic year
+    const activeAcademicYear = await this.getActiveAcademicYear();
+
+    // Auto-generate student ID
+    const studentId = await this.getNextStudentId();
+
+    // Auto-generate email
+    const email = `${studentId}@rtc.edu.kh`;
+
     // Check if email already exists
     const existingUser = await this.userRepository.findOne({
-      where: { email: createStudentDto.email },
+      where: { email },
     });
 
     if (existingUser) {
       throw new Error('Email already exists');
     }
 
-    // Check if student_id already exists
-    const existingStudent = await this.studentInfoRepository.findOne({
-      where: { student_id: createStudentDto.student_id },
-    });
-
-    if (existingStudent) {
-      throw new Error('Student ID already exists');
-    }
-
     // Validate foreign key references
-    await this.validateReferences(createStudentDto);
+    await this.validateReferences({
+      ...createStudentDto,
+      academic_year_id: activeAcademicYear.id,
+    });
 
     let imageUrl: string | undefined;
 
@@ -354,18 +455,18 @@ export class StudentService {
       imageUrl = this.minioService.getPublicUrl(objectName);
     }
 
+    // Auto-generate password (same as student ID)
+    const password = studentId;
+
     // ✅ Hash password using bcryptjs
     const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(
-      createStudentDto.password,
-      saltRounds,
-    );
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Create user
     const user = this.userRepository.create({
       name_kh: createStudentDto.name_kh,
       name_en: createStudentDto.name_en,
-      email: createStudentDto.email,
+      email: email,
       password: hashedPassword,
       phone: createStudentDto.phone,
       gender: createStudentDto.gender,
@@ -381,12 +482,11 @@ export class StudentService {
     // Create student info
     const studentInfo = this.studentInfoRepository.create({
       user_id: savedUser.id,
-      student_id: createStudentDto.student_id,
+      student_id: studentId,
       department_id: createStudentDto.department_id,
       section_id: createStudentDto.section_id,
       program_id: createStudentDto.program_id,
-      academic_year_id: createStudentDto.academic_year_id,
-      grade: createStudentDto.grade,
+      academic_year_id: activeAcademicYear.id,
       student_year: createStudentDto.student_year,
       is_active: true,
     });
@@ -399,164 +499,90 @@ export class StudentService {
       name_en: savedUser.name_en,
       name_kh: savedUser.name_kh,
       email: savedUser.email,
+      academic_year: activeAcademicYear.name, // Now guaranteed to exist
     };
   }
-
-  async deleteStudent(id: string): Promise<{ 
-  success: boolean; 
-  message: string; 
-}> {
-  // Find the student info first with user details
-  let studentInfo = await this.studentInfoRepository.findOne({
-    where: [
-      { student_id: id, is_active: true },
-      { id: id, is_active: true },
-    ],
-    relations: ['user'],
-  });
-
-  // If not found by student_id or id, try to find by user_id
-  if (!studentInfo) {
-    studentInfo = await this.studentInfoRepository.findOne({
-      where: { user_id: id, is_active: true },
+  async deleteStudent(id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    // Find the student info first with user details
+    let studentInfo = await this.studentInfoRepository.findOne({
+      where: [
+        { student_id: id, is_active: true },
+        { id: id, is_active: true },
+      ],
       relations: ['user'],
     });
-  }
 
-  if (!studentInfo) {
-    throw new NotFoundException(`Student with identifier ${id} not found`);
-  }
-
-  if (!studentInfo.user) {
-    throw new NotFoundException('Student user account not found');
-  }
-
-  // Get student names for the success message
-  const studentNameKh = studentInfo.user.name_kh || '';
-  const studentNameEn = studentInfo.user.name_en || '';
-  
-  // Format the name for the message
-  let formattedName = studentNameKh;
-  if (studentNameKh && studentNameEn) {
-    formattedName = `${studentNameKh} (${studentNameEn})`;
-  } else if (studentNameEn) {
-    formattedName = studentNameEn;
-  }
-
-  // Use transaction to ensure both updates succeed or fail together
-  const queryRunner = this.studentInfoRepository.manager.connection.createQueryRunner();
-  await queryRunner.connect();
-  await queryRunner.startTransaction();
-
-  try {
-    // Soft delete the student info
-    studentInfo.is_active = false;
-    await queryRunner.manager.save(studentInfo);
-
-    // Soft delete the associated user if it exists
-    if (studentInfo.user) {
-      const user = await queryRunner.manager.findOne(UserModel, {
-        where: { id: studentInfo.user_id },
+    // If not found by student_id or id, try to find by user_id
+    if (!studentInfo) {
+      studentInfo = await this.studentInfoRepository.findOne({
+        where: { user_id: id, is_active: true },
+        relations: ['user'],
       });
-      
-      if (user) {
-        user.is_active = false;
-        await queryRunner.manager.save(user);
+    }
+
+    if (!studentInfo) {
+      throw new NotFoundException(`Student with identifier ${id} not found`);
+    }
+
+    if (!studentInfo.user) {
+      throw new NotFoundException('Student user account not found');
+    }
+
+    // Get student names for the success message
+    const studentNameKh = studentInfo.user.name_kh || '';
+    const studentNameEn = studentInfo.user.name_en || '';
+
+    // Format the name for the message
+    let formattedName = studentNameKh;
+    if (studentNameKh && studentNameEn) {
+      formattedName = `${studentNameKh} (${studentNameEn})`;
+    } else if (studentNameEn) {
+      formattedName = studentNameEn;
+    }
+
+    // Use transaction to ensure both updates succeed or fail together
+    const queryRunner =
+      this.studentInfoRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Soft delete the student info
+      studentInfo.is_active = false;
+      await queryRunner.manager.save(studentInfo);
+
+      // Soft delete the associated user if it exists
+      if (studentInfo.user) {
+        const user = await queryRunner.manager.findOne(UserModel, {
+          where: { id: studentInfo.user_id },
+        });
+
+        if (user) {
+          user.is_active = false;
+          await queryRunner.manager.save(user);
+        }
       }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        success: true,
+        message: `Student ${formattedName} has been deleted successfully`,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new Error(`Failed to delete student: ${error.message}`);
+    } finally {
+      await queryRunner.release();
     }
-
-    await queryRunner.commitTransaction();
-
-    return {
-      success: true,
-      message: `Student ${formattedName} has been deleted successfully`,
-    };
-  } catch (error) {
-    await queryRunner.rollbackTransaction();
-    throw new Error(`Failed to delete student: ${error.message}`);
-  } finally {
-    await queryRunner.release();
   }
-}
-
-async permanentDeleteStudent(id: string): Promise<{ 
-  success: boolean; 
-  message: string; 
-}> {
-  // Find the student info first with user details
-  let studentInfo = await this.studentInfoRepository.findOne({
-    where: [
-      { student_id: id },
-      { id: id },
-    ],
-    relations: ['user'],
-    withDeleted: true, // Include soft-deleted records
-  });
-
-  // If not found by student_id or id, try to find by user_id
-  if (!studentInfo) {
-    studentInfo = await this.studentInfoRepository.findOne({
-      where: { user_id: id },
-      relations: ['user'],
-      withDeleted: true,
-    });
-  }
-
-  if (!studentInfo) {
-    throw new NotFoundException(`Student with identifier ${id} not found`);
-  }
-
-  if (!studentInfo.user) {
-    throw new NotFoundException('Student user account not found');
-  }
-
-  // Get student names for the success message
-  const studentNameKh = studentInfo.user.name_kh || '';
-  const studentNameEn = studentInfo.user.name_en || '';
-  
-  // Format the name for the message
-  let formattedName = studentNameKh;
-  if (studentNameKh && studentNameEn) {
-    formattedName = `${studentNameKh} (${studentNameEn})`;
-  } else if (studentNameEn) {
-    formattedName = studentNameEn;
-  } else if (studentInfo.student_id) {
-    formattedName = `ID: ${studentInfo.student_id}`;
-  } else {
-    formattedName = `ID: ${studentInfo.id}`;
-  }
-
-  // Use transaction for atomic operations
-  const queryRunner = this.studentInfoRepository.manager.connection.createQueryRunner();
-  await queryRunner.connect();
-  await queryRunner.startTransaction();
-
-  try {
-    // Delete student info
-    await queryRunner.manager.remove(StudentInfoModel, studentInfo);
-
-    // Delete associated user if it exists
-    if (studentInfo.user) {
-      await queryRunner.manager.remove(UserModel, studentInfo.user);
-    }
-
-    await queryRunner.commitTransaction();
-
-    return {
-      success: true,
-      message: `Student ${formattedName} has been permanently deleted`,
-    };
-  } catch (error) {
-    await queryRunner.rollbackTransaction();
-    throw new Error(`Failed to permanently delete student: ${error.message}`);
-  } finally {
-    await queryRunner.release();
-  }
-}
 
   // Add this helper method to validate references
+
   private async validateReferences(dto: CreateStudentDto): Promise<void> {
-    // Just check if records exist - skip department matching for now
     const [department, section, program, academicYear] = await Promise.all([
       this.departmentRepository.findOne({ where: { id: dto.department_id } }),
       this.sectionRepository.findOne({ where: { id: dto.section_id } }),
@@ -572,6 +598,7 @@ async permanentDeleteStudent(id: string): Promise<{
     if (!program) throw new Error(`Program ${dto.program_id} not found`);
     if (!academicYear)
       throw new Error(`Academic year ${dto.academic_year_id} not found`);
+
     return;
   }
 }
