@@ -42,11 +42,11 @@ export class StudentController {
     @Query('department') departmentId?: string,
     @Query('section') sectionId?: string,
     @Query('program') programId?: string,
-    @Query('academicYear') academicYearId?: string,
+    @Query('academic_year') academicYearId?: string,
     @Query('gender') gender?: string,
     @Query('search') search?: string,
-    @Query('sortBy') sortBy: string = 'id',
-    @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'ASC',
+    @Query('sort_by') sortBy: string = 'id',
+    @Query('sort_order') sortOrder: 'ASC' | 'DESC' = 'ASC',
   ): Promise<StudentsResponseDto> {
     try {
       // Validate sortBy parameter
