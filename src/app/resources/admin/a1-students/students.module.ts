@@ -8,7 +8,7 @@ import { UserModel } from 'src/app/database/models/user.model';
 import { StudentController } from './students.controller';
 import { StudentService } from './students.service';
 import { AcademicYearModel } from 'src/app/database/models/academic.year.model';
-import { MinioService } from '../../services/minio.service';
+import { MinioService } from '../../services/minio/minio.service';
 
 
 @Module({

@@ -1,9 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { DepartmentModel } from './department.model';
 
 @Entity('program')
 export class ProgramModel {
-    @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
@@ -13,8 +19,13 @@ export class ProgramModel {
   department_id: number;
 
   @ManyToOne(() => DepartmentModel, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'department_id' })
   department: DepartmentModel;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 }

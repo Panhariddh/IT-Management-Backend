@@ -42,25 +42,22 @@ export class StudentController {
     @Query('department') departmentId?: string,
     @Query('section') sectionId?: string,
     @Query('program') programId?: string,
-    @Query('academicYear') academicYearId?: string,
+    @Query('academic_year') academicYearId?: string,
     @Query('gender') gender?: string,
     @Query('search') search?: string,
-    @Query('sortBy') sortBy: string = 'id',
-    @Query('sortOrder') sortOrder: 'ASC' | 'DESC' = 'ASC',
+    @Query('sort_by') sortBy: string = 'id',
+    @Query('sort_order') sortOrder: 'ASC' | 'DESC' = 'ASC',
   ): Promise<StudentsResponseDto> {
     try {
-      // Validate sortBy parameter
       const allowedSortFields = ['name_en', 'name_kh', 'dob', 'student_id'];
       if (!allowedSortFields.includes(sortBy)) {
         sortBy = 'name_en';
       }
 
-      // Validate sortOrder parameter
       if (sortOrder !== 'ASC' && sortOrder !== 'DESC') {
         sortOrder = 'ASC';
       }
 
-      // Validate gender parameter
       let validGender: string | undefined;
       if (gender) {
         const genderLower = gender.toLowerCase();
@@ -70,7 +67,6 @@ export class StudentController {
           genderLower === 'm' ||
           genderLower === 'f'
         ) {
-          // Normalize gender values
           if (genderLower === 'm') validGender = 'Male';
           else if (genderLower === 'f') validGender = 'Female';
           else
@@ -85,7 +81,7 @@ export class StudentController {
         departmentId: departmentId ? parseInt(departmentId) : undefined,
         sectionId: sectionId ? parseInt(sectionId) : undefined,
         programId: programId ? parseInt(programId) : undefined,
-        academicYearId: academicYearId ? parseInt(academicYearId) : undefined, // Add this
+        academicYearId: academicYearId ? parseInt(academicYearId) : undefined,
         gender: validGender,
         search,
         sortBy,
@@ -190,7 +186,9 @@ export class StudentController {
       return {
         success: true,
         message: 'Student created successfully',
-        data: student,
+        data: {
+          ...student,
+        },
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -237,43 +235,6 @@ export class StudentController {
         {
           success: false,
           message: 'Failed to delete student',
-          error: error.message,
-        },
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
-    }
-  }
-
-  // Permanent delete student
-  @Delete(':id/permanent')
-  @HttpCode(HttpStatus.OK)
-  @Roles(Role.ADMIN)
-  async permanentDeleteStudent(@Param('id') id: string): Promise<{
-    success: boolean;
-    message: string;
-  }> {
-    try {
-      const result = await this.studentService.permanentDeleteStudent(id);
-
-      return {
-        success: true,
-        message: result.message,
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw new HttpException(
-          {
-            success: false,
-            message: error.message,
-          },
-          HttpStatus.NOT_FOUND,
-        );
-      }
-
-      throw new HttpException(
-        {
-          success: false,
-          message: 'Failed to permanently delete student',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,

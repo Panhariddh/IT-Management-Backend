@@ -5,6 +5,7 @@ import { ConfigModule } from 'src/app/config/config.module';
 import { AuthModule } from 'src/app/resources/auth/auth.module';
 import { AppRoutingModule } from './app.route';
 import { AdminModule } from './resources/admin/admin.module';
+import { MinioModule } from './resources/services/minio/minio.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { AdminModule } from './resources/admin/admin.module';
      ConfigModule,
      AuthModule,
      AdminModule,
+     MinioModule,
      AppRoutingModule
   ],
   controllers: [],
