@@ -70,6 +70,7 @@ export class CreateStudentResponseDto {
     name_en: string;
     name_kh: string;
     email: string;
+    image?: string;
     academic_year: string; 
   };
 }
