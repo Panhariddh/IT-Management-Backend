@@ -350,17 +350,13 @@ export class StudentService {
 
         const number = parseInt(numberPart, 10);
         if (!isNaN(number)) {
-          console.log(`Parsed number: ${number}`);
           if (number > maxNumber) {
             maxNumber = number;
-            console.log(`New max number: ${maxNumber}`);
           }
         }
       }
     });
-
     const nextNumber = maxNumber + 1;
-    console.log(`Next number to use: ${nextNumber}`);
 
     const digitCount = 4;
     const maxStudents = Math.pow(10, digitCount) - 1;
@@ -374,10 +370,6 @@ export class StudentService {
     // Format with proper padding
     const formattedNumber = nextNumber.toString().padStart(digitCount, '0');
     const newStudentId = `e${year}${formattedNumber}`;
-
-    console.log(
-      `Formatted number: ${formattedNumber}, New student ID: ${newStudentId}`,
-    );
 
     // Final uniqueness check
     const exists = await this.studentInfoRepository.findOne({
