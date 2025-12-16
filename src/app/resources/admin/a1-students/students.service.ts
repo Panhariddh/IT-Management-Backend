@@ -408,22 +408,14 @@ export class StudentService {
     academic_year: string;
     image?: string;
   }> {
-    console.log(
-      '1. Starting createStudent with imageFile:',
-      imageFile?.originalname,
-    );
-
     // Get active academic year
     const activeAcademicYear = await this.getActiveAcademicYear();
-    console.log('2. Active academic year:', activeAcademicYear);
 
     // Auto-generate student ID
     const studentId = await this.getNextStudentId();
-    console.log('3. Generated student ID:', studentId);
 
     // Auto-generate email
     const email = `${studentId}@rtc.edu.kh`;
-    console.log('4. Generated email:', email);
 
     // Validate foreign key references
     await this.validateReferences({
@@ -435,30 +427,25 @@ export class StudentService {
 
     // Upload image if provided
     if (imageFile) {
-      console.log('5. Uploading image to MinIO...');
       try {
         const objectName = await this.minioService.uploadImage(
           imageFile,
           'student-images',
         );
         imageUrl = this.minioService.getProxiedUrl(objectName);
-        console.log('6. Image uploaded successfully. URL:', imageUrl);
       } catch (error) {
         console.error('Failed to upload image:', error);
       }
-    } else {
-      console.log('5. No image file provided');
-    }
+    } 
 
     // Auto-generate password (same as student ID)
     const password = studentId;
-    console.log('7. Generated password:', password);
 
     // Hash password using bcryptjs
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user WITH image
+    // Create user with image
     const user = this.userRepository.create({
       name_kh: createStudentDto.name_kh,
       name_en: createStudentDto.name_en,
@@ -470,14 +457,10 @@ export class StudentService {
       address: createStudentDto.address,
       role: Role.STUDENT,
       is_active: true,
-      image: imageUrl, // This should save the image URL
+      image: imageUrl, 
     });
 
-    console.log('8. User object before save:', JSON.stringify(user, null, 2));
-
     const savedUser = await this.userRepository.save(user);
-    console.log('9. User saved with ID:', savedUser.id);
-    console.log('10. User image URL in database:', savedUser.image);
 
     // Create student info
     const studentInfo = this.studentInfoRepository.create({
@@ -492,7 +475,6 @@ export class StudentService {
     });
 
     const savedStudentInfo = await this.studentInfoRepository.save(studentInfo);
-    console.log('11. Student info saved with ID:', savedStudentInfo.id);
 
     return {
       id: savedStudentInfo.id,
@@ -501,7 +483,7 @@ export class StudentService {
       name_kh: savedUser.name_en,
       email: savedUser.email,
       academic_year: activeAcademicYear.name,
-      image: savedUser.image, // Make sure to return this
+      image: savedUser.image, 
     };
   }
   async deleteStudent(id: string): Promise<{

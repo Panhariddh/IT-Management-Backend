@@ -49,18 +49,15 @@ export class StudentController {
     @Query('sort_order') sortOrder: 'ASC' | 'DESC' = 'ASC',
   ): Promise<StudentsResponseDto> {
     try {
-      // Validate sortBy parameter
       const allowedSortFields = ['name_en', 'name_kh', 'dob', 'student_id'];
       if (!allowedSortFields.includes(sortBy)) {
         sortBy = 'name_en';
       }
 
-      // Validate sortOrder parameter
       if (sortOrder !== 'ASC' && sortOrder !== 'DESC') {
         sortOrder = 'ASC';
       }
 
-      // Validate gender parameter
       let validGender: string | undefined;
       if (gender) {
         const genderLower = gender.toLowerCase();
@@ -70,7 +67,6 @@ export class StudentController {
           genderLower === 'm' ||
           genderLower === 'f'
         ) {
-          // Normalize gender values
           if (genderLower === 'm') validGender = 'Male';
           else if (genderLower === 'f') validGender = 'Female';
           else
@@ -85,7 +81,7 @@ export class StudentController {
         departmentId: departmentId ? parseInt(departmentId) : undefined,
         sectionId: sectionId ? parseInt(sectionId) : undefined,
         programId: programId ? parseInt(programId) : undefined,
-        academicYearId: academicYearId ? parseInt(academicYearId) : undefined, // Add this
+        academicYearId: academicYearId ? parseInt(academicYearId) : undefined,
         gender: validGender,
         search,
         sortBy,

@@ -27,7 +27,6 @@ export class MinioService implements OnModuleInit {
     const exists = await this.client.bucketExists(this.bucket);
     if (!exists) {
       await this.client.makeBucket(this.bucket);
-      console.log(`✅ MinIO bucket created: ${this.bucket}`);
     }
   }
 
@@ -50,31 +49,19 @@ export class MinioService implements OnModuleInit {
     return objectName;
   }
 
-  // OLD METHOD - Keep for backward compatibility if needed
-  getPublicUrl(objectName: string) {
-    return `http://localhost:9000/${this.bucket}/${objectName}`;
-  }
-
-  // NEW METHOD - Returns proxied URL through backend
   getProxiedUrl(objectName: string) {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
     return `${backendUrl}/api/images/${objectName}`;
   }
 
-  // NEW METHOD - Stream image from MinIO
   async streamImage(objectName: string): Promise<{
     stream: Readable;
     contentType: string;
     contentLength: number;
   }> {
     try {
-      // Get object stat to check if exists and get metadata
       const stat = await this.client.statObject(this.bucket, objectName);
-
-      // Get the object stream
       const stream = await this.client.getObject(this.bucket, objectName);
-
-      // Determine content type
       const contentType = stat.metaData['content-type'] || this.getContentType(objectName);
 
       return {
@@ -88,7 +75,6 @@ export class MinioService implements OnModuleInit {
     }
   }
 
-  // Helper method to determine content type from filename
   private getContentType(filename: string): string {
     const ext = filename.split('.').pop()?.toLowerCase();
     const mimeTypes: Record<string, string> = {
@@ -104,7 +90,6 @@ export class MinioService implements OnModuleInit {
     return mimeTypes[ext || ''] || 'application/octet-stream';
   }
 
-  // Optional: Delete image method
   async deleteImage(objectName: string): Promise<void> {
     try {
       await this.client.removeObject(this.bucket, objectName);

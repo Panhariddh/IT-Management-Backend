@@ -1,4 +1,3 @@
-// main.ts
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app/app.module';
 const cookieParser = require('cookie-parser');

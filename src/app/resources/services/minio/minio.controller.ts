@@ -1,10 +1,9 @@
-// src/images/images.controller.ts
 import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
-import { MinioService } from '../minio/minio.service';
+import { MinioService } from './minio.service';
 
 @Controller()
-export class ImagesController {
+export class MinioController {
   constructor(private readonly minioService: MinioService) {}
 
   @Get(':folder/:filename')
