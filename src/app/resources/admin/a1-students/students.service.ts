@@ -402,6 +402,158 @@ export class StudentService {
     };
   }
 
+  async deleteStudent(id: string): Promise<{ 
+  success: boolean; 
+  message: string; 
+}> {
+  // Find the student info first with user details
+  let studentInfo = await this.studentInfoRepository.findOne({
+    where: [
+      { student_id: id, is_active: true },
+      { id: id, is_active: true },
+    ],
+    relations: ['user'],
+  });
+
+  // If not found by student_id or id, try to find by user_id
+  if (!studentInfo) {
+    studentInfo = await this.studentInfoRepository.findOne({
+      where: { user_id: id, is_active: true },
+      relations: ['user'],
+    });
+  }
+
+  if (!studentInfo) {
+    throw new NotFoundException(`Student with identifier ${id} not found`);
+  }
+
+  if (!studentInfo.user) {
+    throw new NotFoundException('Student user account not found');
+  }
+
+  // Get student names for the success message
+  const studentNameKh = studentInfo.user.name_kh || '';
+  const studentNameEn = studentInfo.user.name_en || '';
+  
+  // Format the name for the message
+  let formattedName = studentNameKh;
+  if (studentNameKh && studentNameEn) {
+    formattedName = `${studentNameKh} (${studentNameEn})`;
+  } else if (studentNameEn) {
+    formattedName = studentNameEn;
+  }
+
+  // Use transaction to ensure both updates succeed or fail together
+  const queryRunner = this.studentInfoRepository.manager.connection.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    // Soft delete the student info
+    studentInfo.is_active = false;
+    await queryRunner.manager.save(studentInfo);
+
+    // Soft delete the associated user if it exists
+    if (studentInfo.user) {
+      const user = await queryRunner.manager.findOne(UserModel, {
+        where: { id: studentInfo.user_id },
+      });
+      
+      if (user) {
+        user.is_active = false;
+        await queryRunner.manager.save(user);
+      }
+    }
+
+    await queryRunner.commitTransaction();
+
+    return {
+      success: true,
+      message: `Student ${formattedName} has been deleted successfully`,
+    };
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw new Error(`Failed to delete student: ${error.message}`);
+  } finally {
+    await queryRunner.release();
+  }
+}
+
+async permanentDeleteStudent(id: string): Promise<{ 
+  success: boolean; 
+  message: string; 
+}> {
+  // Find the student info first with user details
+  let studentInfo = await this.studentInfoRepository.findOne({
+    where: [
+      { student_id: id },
+      { id: id },
+    ],
+    relations: ['user'],
+    withDeleted: true, // Include soft-deleted records
+  });
+
+  // If not found by student_id or id, try to find by user_id
+  if (!studentInfo) {
+    studentInfo = await this.studentInfoRepository.findOne({
+      where: { user_id: id },
+      relations: ['user'],
+      withDeleted: true,
+    });
+  }
+
+  if (!studentInfo) {
+    throw new NotFoundException(`Student with identifier ${id} not found`);
+  }
+
+  if (!studentInfo.user) {
+    throw new NotFoundException('Student user account not found');
+  }
+
+  // Get student names for the success message
+  const studentNameKh = studentInfo.user.name_kh || '';
+  const studentNameEn = studentInfo.user.name_en || '';
+  
+  // Format the name for the message
+  let formattedName = studentNameKh;
+  if (studentNameKh && studentNameEn) {
+    formattedName = `${studentNameKh} (${studentNameEn})`;
+  } else if (studentNameEn) {
+    formattedName = studentNameEn;
+  } else if (studentInfo.student_id) {
+    formattedName = `ID: ${studentInfo.student_id}`;
+  } else {
+    formattedName = `ID: ${studentInfo.id}`;
+  }
+
+  // Use transaction for atomic operations
+  const queryRunner = this.studentInfoRepository.manager.connection.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.startTransaction();
+
+  try {
+    // Delete student info
+    await queryRunner.manager.remove(StudentInfoModel, studentInfo);
+
+    // Delete associated user if it exists
+    if (studentInfo.user) {
+      await queryRunner.manager.remove(UserModel, studentInfo.user);
+    }
+
+    await queryRunner.commitTransaction();
+
+    return {
+      success: true,
+      message: `Student ${formattedName} has been permanently deleted`,
+    };
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw new Error(`Failed to permanently delete student: ${error.message}`);
+  } finally {
+    await queryRunner.release();
+  }
+}
+
   // Add this helper method to validate references
   private async validateReferences(dto: CreateStudentDto): Promise<void> {
     // Just check if records exist - skip department matching for now
@@ -420,9 +572,6 @@ export class StudentService {
     if (!program) throw new Error(`Program ${dto.program_id} not found`);
     if (!academicYear)
       throw new Error(`Academic year ${dto.academic_year_id} not found`);
-
-    // TEMPORARILY SKIP department matching
-    // We'll fix this after student creation works
     return;
   }
 }

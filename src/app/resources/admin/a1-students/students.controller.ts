@@ -11,6 +11,9 @@ import {
   Post,
   UseInterceptors,
   Body,
+  NotFoundException,
+  HttpCode,
+  Delete,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/app/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/app/common/guards/roles.guard';
@@ -31,6 +34,7 @@ import { FileInterceptor } from '@nestjs/platform-express/multer';
 export class StudentController {
   constructor(private readonly studentService: StudentService) {}
 
+  // Get all students with pagination, filtering, and sorting
   @Get()
   async getAllStudents(
     @Query('page') page: number = 1,
@@ -107,6 +111,7 @@ export class StudentController {
     }
   }
 
+  // Get a single student by ID
   @Get(':id')
   async getAStudent(@Param('id') id: string): Promise<{
     success: boolean;
@@ -146,6 +151,7 @@ export class StudentController {
     }
   }
 
+  // Create a new student
   @Post()
   @UseInterceptors(FileInterceptor('image'))
   async createStudent(
@@ -198,6 +204,79 @@ export class StudentController {
           error: error.message,
         },
         HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // Soft delete student
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async deleteStudent(@Param('id') id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const result = await this.studentService.deleteStudent(id);
+
+      return {
+        success: true,
+        message: result.message,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new HttpException(
+          {
+            success: false,
+            message: error.message,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to delete student',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  // Permanent delete student
+  @Delete(':id/permanent')
+  @HttpCode(HttpStatus.OK)
+  @Roles(Role.ADMIN)
+  async permanentDeleteStudent(@Param('id') id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const result = await this.studentService.permanentDeleteStudent(id);
+
+      return {
+        success: true,
+        message: result.message,
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new HttpException(
+          {
+            success: false,
+            message: error.message,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to permanently delete student',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }
