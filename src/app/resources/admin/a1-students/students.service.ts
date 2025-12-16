@@ -326,7 +326,7 @@ export class StudentService {
     if (!yearMatch) {
       throw new Error('Invalid academic year format. Expected: YYYY-YYYY');
     }
-    const year = yearMatch[2]; // 2025
+    const year = yearMatch[2];
 
     // Find highest student number for this year
     const students = await this.studentInfoRepository
@@ -362,12 +362,7 @@ export class StudentService {
     const nextNumber = maxNumber + 1;
     console.log(`Next number to use: ${nextNumber}`);
 
-    // DECIDE: How many digits do you want?
-    // Option 1: 4 digits (e20250006) - Supports up to 9999 students
-    // Option 2: 3 digits (e2025006) - Supports up to 999 students
-
-    // Based on your expected output "e20250006", you want 4 digits
-    const digitCount = 4; // Change to 3 if you want e2025006 format
+    const digitCount = 4;
     const maxStudents = Math.pow(10, digitCount) - 1;
 
     if (nextNumber > maxStudents) {
@@ -458,7 +453,7 @@ export class StudentService {
     // Auto-generate password (same as student ID)
     const password = studentId;
 
-    // ✅ Hash password using bcryptjs
+    // Hash password using bcryptjs
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
@@ -499,9 +494,10 @@ export class StudentService {
       name_en: savedUser.name_en,
       name_kh: savedUser.name_kh,
       email: savedUser.email,
-      academic_year: activeAcademicYear.name, // Now guaranteed to exist
+      academic_year: activeAcademicYear.name,
     };
   }
+
   async deleteStudent(id: string): Promise<{
     success: boolean;
     message: string;
@@ -531,7 +527,6 @@ export class StudentService {
       throw new NotFoundException('Student user account not found');
     }
 
-    // Get student names for the success message
     const studentNameKh = studentInfo.user.name_kh || '';
     const studentNameEn = studentInfo.user.name_en || '';
 
@@ -543,7 +538,6 @@ export class StudentService {
       formattedName = studentNameEn;
     }
 
-    // Use transaction to ensure both updates succeed or fail together
     const queryRunner =
       this.studentInfoRepository.manager.connection.createQueryRunner();
     await queryRunner.connect();
@@ -581,7 +575,6 @@ export class StudentService {
   }
 
   // Add this helper method to validate references
-
   private async validateReferences(dto: CreateStudentDto): Promise<void> {
     const [department, section, program, academicYear] = await Promise.all([
       this.departmentRepository.findOne({ where: { id: dto.department_id } }),
