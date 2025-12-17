@@ -14,6 +14,7 @@ import {
   NotFoundException,
   HttpCode,
   Delete,
+  Patch,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/app/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/app/common/guards/roles.guard';
@@ -25,6 +26,8 @@ import {
   CreateStudentResponseDto,
   StudentDetailDto,
   StudentsResponseDto,
+  UpdateStudentDto,
+  UpdateStudentResponseDto,
 } from './students.dto';
 import { FileInterceptor } from '@nestjs/platform-express/multer';
 
@@ -199,6 +202,76 @@ export class StudentController {
         {
           success: false,
           message: 'Failed to create student',
+          error: error.message,
+        },
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+  }
+
+  // Update student
+  @Patch(':id')
+  @UseInterceptors(FileInterceptor('image'))
+  async updateStudent(
+    @Param('id') id: string,
+    @Body() updateStudentDto: UpdateStudentDto,
+    @UploadedFile() imageFile?: Express.Multer.File,
+  ): Promise<UpdateStudentResponseDto> {
+    try {
+      // Validate file type if image is provided
+      if (imageFile) {
+        const allowedMimeTypes = [
+          'image/jpeg',
+          'image/png',
+          'image/jpg',
+          'image/gif',
+        ];
+        if (!allowedMimeTypes.includes(imageFile.mimetype)) {
+          throw new BadRequestException(
+            'Invalid image format. Allowed: JPEG, PNG, JPG, GIF',
+          );
+        }
+
+        // Validate file size (max 5MB)
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        if (imageFile.size > maxSize) {
+          throw new BadRequestException(
+            'Image size too large. Maximum size is 5MB',
+          );
+        }
+      }
+
+      // Check if at least one field is being updated
+      const hasUpdates = Object.keys(updateStudentDto).length > 0 || imageFile;
+      if (!hasUpdates) {
+        throw new BadRequestException('No update data provided');
+      }
+
+      const student = await this.studentService.updateStudent(
+        id,
+        updateStudentDto,
+        imageFile,
+      );
+
+      return {
+        success: true,
+        message: 'Student updated successfully',
+        data: {
+          ...student,
+        },
+      };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to update student',
           error: error.message,
         },
         HttpStatus.BAD_REQUEST,

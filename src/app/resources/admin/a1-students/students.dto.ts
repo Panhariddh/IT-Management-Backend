@@ -1,4 +1,13 @@
-import { IsNotEmpty, IsOptional, IsString, IsEmail, IsNumber, IsEnum, IsDateString } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsEmail,
+  IsNumber,
+  IsEnum,
+  IsDateString,
+  IsBoolean,
+} from 'class-validator';
 export class CreateStudentDto {
   @IsNotEmpty()
   @IsString()
@@ -59,8 +68,6 @@ export class CreateStudentDto {
   @IsOptional()
   image?: any;
 }
-
-// Add this response DTO
 export class CreateStudentResponseDto {
   success: boolean;
   message: string;
@@ -71,11 +78,82 @@ export class CreateStudentResponseDto {
     name_kh: string;
     email: string;
     image?: string;
-    academic_year: string; 
+    academic_year: string;
   };
 }
+export class UpdateStudentDto {
+  @IsOptional()
+  @IsString()
+  name_kh?: string;
+
+  @IsOptional()
+  @IsString()
+  name_en?: string;
+
+  @IsOptional()
+  @IsEmail()
+  email?: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsEnum(['Male', 'Female'])
+  gender?: string;
+
+  @IsOptional()
+  @IsDateString()
+  dob?: string;
+
+  @IsOptional()
+  @IsString()
+  address?: string;
+
+  @IsOptional()
+  @IsNumber()
+  department_id?: number;
+
+  @IsOptional()
+  @IsNumber()
+  section_id?: number;
+
+  @IsOptional()
+  @IsNumber()
+  program_id?: number;
+
+  @IsOptional()
+  @IsNumber()
+  student_year?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  is_active?: boolean;
+
+  @IsOptional()
+  image?: any;
+}
+export class UpdateStudentResponseDto {
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    student_id: string;
+    name_en: string;
+    name_kh: string;
+    email: string;
+    image?: string;
+    academic_year: string;
+    department: string;
+    section: string;
+    program: string;
+    student_year: number;
+    is_active: boolean;
+  };
+}
+
 export class StudentDto {
-id: string;
+  id: string;
   student_id: string;
   name_kh: string;
   name_en: string;
@@ -86,7 +164,7 @@ id: string;
   program?: string;
   grade?: string;
   student_year?: number;
-  academic_year?: string; 
+  academic_year?: string;
 }
 export class StudentDetailDto extends StudentDto {
   email: string;
@@ -120,6 +198,3 @@ export class StudentsResponseDto {
   data_setup: DataSetupDto;
   meta: MetaDto;
 }
-
-
-

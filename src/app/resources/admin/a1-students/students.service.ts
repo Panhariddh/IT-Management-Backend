@@ -14,6 +14,7 @@ import {
   MetaDto,
   StudentDetailDto,
   StudentDto,
+  UpdateStudentDto,
 } from './students.dto';
 import { AcademicYearModel } from 'src/app/database/models/academic.year.model';
 import { MinioService } from '../../services/minio/minio.service';
@@ -436,7 +437,7 @@ export class StudentService {
       } catch (error) {
         console.error('Failed to upload image:', error);
       }
-    } 
+    }
 
     // Auto-generate password (same as student ID)
     const password = studentId;
@@ -457,7 +458,7 @@ export class StudentService {
       address: createStudentDto.address,
       role: Role.STUDENT,
       is_active: true,
-      image: imageUrl, 
+      image: imageUrl,
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -483,9 +484,183 @@ export class StudentService {
       name_kh: savedUser.name_en,
       email: savedUser.email,
       academic_year: activeAcademicYear.name,
-      image: savedUser.image, 
+      image: savedUser.image,
     };
   }
+
+  async updateStudent(
+    id: string,
+    updateStudentDto: UpdateStudentDto,
+    imageFile?: Express.Multer.File,
+  ): Promise<{
+    id: string;
+    student_id: string;
+    name_en: string;
+    name_kh: string;
+    email: string;
+    image?: string;
+    academic_year: string;
+    department: string;
+    section: string;
+    program: string;
+    student_year: number;
+    is_active: boolean;
+  }> {
+    // Find student info with user details
+    let studentInfo = await this.studentInfoRepository.findOne({
+      where: [
+        { student_id: id, is_active: true },
+        { id: id, is_active: true },
+      ],
+      relations: ['user', 'department', 'section', 'program', 'academicYear'],
+    });
+
+    // If not found by student_id or id, try to find by user_id
+    if (!studentInfo) {
+      studentInfo = await this.studentInfoRepository.findOne({
+        where: { user_id: id, is_active: true },
+        relations: ['user', 'department', 'section', 'program', 'academicYear'],
+      });
+    }
+
+    if (!studentInfo) {
+      throw new NotFoundException(`Student with identifier ${id} not found`);
+    }
+
+    if (!studentInfo.user) {
+      throw new NotFoundException('Student user account not found');
+    }
+
+    const queryRunner =
+      this.studentInfoRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Validate foreign key references if provided
+      if (
+        updateStudentDto.department_id ||
+        updateStudentDto.section_id ||
+        updateStudentDto.program_id
+      ) {
+        const referencesToValidate = {
+          department_id:
+            updateStudentDto.department_id || studentInfo.department_id,
+          section_id: updateStudentDto.section_id || studentInfo.section_id,
+          program_id: updateStudentDto.program_id || studentInfo.program_id,
+          academic_year_id: studentInfo.academic_year_id, 
+        };
+        await this.validateReferences(referencesToValidate);
+      }
+
+      let imageUrl: string | undefined = studentInfo.user.image;
+
+      // Upload new image if provided
+      if (imageFile) {
+        try {
+          const objectName = await this.minioService.uploadImage(
+            imageFile,
+            'student-images',
+          );
+          imageUrl = this.minioService.getProxiedUrl(objectName);
+
+          // Delete old image if exists
+          if (studentInfo.user.image) {
+            const oldImagePath = studentInfo.user.image.split('/').pop();
+            if (oldImagePath) {
+              await this.minioService.deleteImage(oldImagePath).catch((err) => {
+                console.warn('Failed to delete old image:', err.message);
+              });
+            }
+          }
+        } catch (error) {
+          console.error('Failed to upload image:', error);
+          throw new Error(`Failed to upload image: ${error.message}`);
+        }
+      }
+
+      // Update user
+      const userUpdateData: any = {};
+
+      if (updateStudentDto.name_kh !== undefined)
+        userUpdateData.name_kh = updateStudentDto.name_kh;
+      if (updateStudentDto.name_en !== undefined)
+        userUpdateData.name_en = updateStudentDto.name_en;
+      if (updateStudentDto.email !== undefined)
+        userUpdateData.email = updateStudentDto.email;
+      if (updateStudentDto.phone !== undefined)
+        userUpdateData.phone = updateStudentDto.phone;
+      if (updateStudentDto.gender !== undefined)
+        userUpdateData.gender = updateStudentDto.gender;
+      if (updateStudentDto.dob !== undefined)
+        userUpdateData.dob = new Date(updateStudentDto.dob);
+      if (updateStudentDto.address !== undefined)
+        userUpdateData.address = updateStudentDto.address;
+      if (imageUrl !== undefined) userUpdateData.image = imageUrl;
+      if (updateStudentDto.is_active !== undefined)
+        userUpdateData.is_active = updateStudentDto.is_active;
+
+      await queryRunner.manager.update(
+        UserModel,
+        studentInfo.user_id,
+        userUpdateData,
+      );
+
+      // Update student info
+      const studentInfoUpdateData: any = {};
+
+      if (updateStudentDto.department_id !== undefined)
+        studentInfoUpdateData.department_id = updateStudentDto.department_id;
+      if (updateStudentDto.section_id !== undefined)
+        studentInfoUpdateData.section_id = updateStudentDto.section_id;
+      if (updateStudentDto.program_id !== undefined)
+        studentInfoUpdateData.program_id = updateStudentDto.program_id;
+      if (updateStudentDto.student_year !== undefined)
+        studentInfoUpdateData.student_year = updateStudentDto.student_year;
+      if (updateStudentDto.is_active !== undefined)
+        studentInfoUpdateData.is_active = updateStudentDto.is_active;
+
+      await queryRunner.manager.update(
+        StudentInfoModel,
+        studentInfo.id,
+        studentInfoUpdateData,
+      );
+
+      await queryRunner.commitTransaction();
+
+      // Fetch updated data with relations
+      const updatedStudentInfo = await this.studentInfoRepository.findOne({
+        where: { id: studentInfo.id },
+        relations: ['user', 'department', 'section', 'program', 'academicYear'],
+      });
+
+      if (!updatedStudentInfo) {
+        throw new Error('Failed to fetch updated student data');
+      }
+
+      return {
+        id: updatedStudentInfo.id,
+        student_id: updatedStudentInfo.student_id,
+        name_en: updatedStudentInfo.user.name_en,
+        name_kh: updatedStudentInfo.user.name_kh,
+        email: updatedStudentInfo.user.email,
+        image: updatedStudentInfo.user.image,
+        academic_year: updatedStudentInfo.academicYear?.name || '',
+        department: updatedStudentInfo.department?.name || '',
+        section: updatedStudentInfo.section?.name || '',
+        program: updatedStudentInfo.program?.name || '',
+        student_year: updatedStudentInfo.student_year,
+        is_active:
+          updatedStudentInfo.is_active && updatedStudentInfo.user.is_active,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new Error(`Failed to update student: ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async deleteStudent(id: string): Promise<{
     success: boolean;
     message: string;
@@ -563,22 +738,62 @@ export class StudentService {
   }
 
   // Add this helper method to validate references
-  private async validateReferences(dto: CreateStudentDto): Promise<void> {
-    const [department, section, program, academicYear] = await Promise.all([
-      this.departmentRepository.findOne({ where: { id: dto.department_id } }),
-      this.sectionRepository.findOne({ where: { id: dto.section_id } }),
-      this.programRepository.findOne({ where: { id: dto.program_id } }),
-      this.academicYearRepository.findOne({
-        where: { id: dto.academic_year_id },
-      }),
-    ]);
+  private async validateReferences(
+    dto: Partial<CreateStudentDto>,
+  ): Promise<void> {
+    const validations: Promise<any>[] = [];
 
-    if (!department)
+    if (dto.department_id) {
+      validations.push(
+        this.departmentRepository.findOne({ where: { id: dto.department_id } }),
+      );
+    }
+
+    if (dto.section_id) {
+      validations.push(
+        this.sectionRepository.findOne({ where: { id: dto.section_id } }),
+      );
+    }
+
+    if (dto.program_id) {
+      validations.push(
+        this.programRepository.findOne({ where: { id: dto.program_id } }),
+      );
+    }
+
+    if (dto.academic_year_id) {
+      validations.push(
+        this.academicYearRepository.findOne({
+          where: { id: dto.academic_year_id },
+        }),
+      );
+    }
+
+    if (validations.length === 0) {
+      return;
+    }
+
+    const results = await Promise.all(validations);
+
+    let index = 0;
+    if (dto.department_id && !results[index]) {
       throw new Error(`Department ${dto.department_id} not found`);
-    if (!section) throw new Error(`Section ${dto.section_id} not found`);
-    if (!program) throw new Error(`Program ${dto.program_id} not found`);
-    if (!academicYear)
+    }
+    index++;
+
+    if (dto.section_id && !results[index]) {
+      throw new Error(`Section ${dto.section_id} not found`);
+    }
+    index++;
+
+    if (dto.program_id && !results[index]) {
+      throw new Error(`Program ${dto.program_id} not found`);
+    }
+    index++;
+
+    if (dto.academic_year_id && !results[index]) {
       throw new Error(`Academic year ${dto.academic_year_id} not found`);
+    }
 
     return;
   }
