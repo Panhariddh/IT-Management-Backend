@@ -26,10 +26,7 @@ export class StudentInfoModel {
 
   @Column({ unique: true })
   student_id: string;
-
-  @Column({ nullable: true })
-  grade: string;
-
+     
   @Column()
   student_year: number;
 
