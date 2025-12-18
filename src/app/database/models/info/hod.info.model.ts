@@ -14,18 +14,23 @@ export class HodInfoModel {
   @JoinColumn({ name: 'user_id' })
   user: UserModel;
 
+  @Column({ unique: true })
+  hod_id: string; 
+
   @Column()
   department_id: number;
 
-  @ManyToOne(() => DepartmentModel, { onDelete: 'CASCADE' })
+  @ManyToOne(() => DepartmentModel, { onDelete: 'RESTRICT' }) 
+  @JoinColumn({ name: 'department_id' }) 
   department: DepartmentModel;
-
-  @Column({ type: 'date', nullable: true })
-  appointed_date: Date;
 
   @Column({ default: true })
   is_active: boolean;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ 
+    name: 'created_at', 
+    type: 'timestamp', 
+    default: () => 'CURRENT_TIMESTAMP' 
+  })
   createdAt: Date;
 }

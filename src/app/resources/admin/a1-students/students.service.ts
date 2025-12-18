@@ -140,7 +140,6 @@ export class StudentService {
       department: student.department?.name || '',
       section: student.section?.name || '',
       program: student.program?.name || '',
-      grade: student.grade,
       student_year: student.student_year,
       academic_year: student.academicYear?.name || '',
     }));
@@ -213,7 +212,6 @@ export class StudentService {
       department: studentInfo.department?.name || '',
       section: studentInfo.section?.name || '',
       program: studentInfo.program?.name || '',
-      grade: studentInfo.grade,
       student_year: studentInfo.student_year,
       academic_year: studentInfo.academicYear?.name || '',
       department_id: studentInfo.department_id,

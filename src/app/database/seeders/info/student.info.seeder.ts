@@ -45,7 +45,6 @@ export class StudentInfoSeeder {
         departmentName: 'Faculty of Medicine',
         sectionName: 'General Medicine',
         programName: 'General Medicine',
-        grade: 'A',
         student_year: 1,
       },
       {
@@ -53,7 +52,6 @@ export class StudentInfoSeeder {
         departmentName: 'Faculty of Engineering',
         sectionName: 'Software Engineering',
         programName: 'Software Engineering',
-        grade: 'B',
         student_year: 1,
       },
       {
@@ -61,7 +59,6 @@ export class StudentInfoSeeder {
         departmentName: 'Faculty of Business',
         sectionName: 'Finance and Banking',
         programName: 'Finance and Banking',
-        grade: 'A',
         student_year: 1,
       },
       {
@@ -69,7 +66,6 @@ export class StudentInfoSeeder {
         departmentName: 'Faculty of Social Sciences',
         sectionName: 'International Relations',
         programName: 'International Relations',
-        grade: 'B',
         student_year: 1,
       },
       {
@@ -77,7 +73,6 @@ export class StudentInfoSeeder {
         departmentName: 'Faculty of Science',
         sectionName: 'Computer Science',
         programName: 'Computer Science',
-        grade: 'A',
         student_year: 1,
       },
     ];
@@ -103,7 +98,6 @@ export class StudentInfoSeeder {
         const studentInfo = repo.create({
           user_id: user.id,
           student_id: data.student_id,
-          grade: data.grade,
           student_year: data.student_year,
           academic_year_id: currentAcademicYear.id,
           department_id: departmentId,
@@ -113,7 +107,6 @@ export class StudentInfoSeeder {
         });
 
         await repo.save(studentInfo);
-        console.log(`✅ Created student info for ${user.name_en}`);
       }
     }
 
