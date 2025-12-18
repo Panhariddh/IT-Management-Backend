@@ -1,6 +1,7 @@
 import { Routes } from '@nestjs/core';
 import { AdminModule } from './admin.module';
 import { StudentModule } from './a1-students/students.module';
+import { TeacherModule } from './a2-teachers/teachers.module';
 
 export const adminRoutes: Routes = [
   {
@@ -10,6 +11,10 @@ export const adminRoutes: Routes = [
       {
         path: 'students',
         module: StudentModule,
+      },
+      {
+        path: 'teachers',
+        module: TeacherModule,
       },
     ],
   },
