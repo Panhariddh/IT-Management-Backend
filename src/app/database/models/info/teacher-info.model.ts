@@ -15,17 +15,14 @@ export class TeacherInfoModel {
   user: UserModel;
 
   @Column({ unique: true })
-  employee_number: string;
-
-  @Column({ name: 'department_id', type: 'int', nullable: true }) 
+  teacher_id: string; 
+     
+  @Column({ nullable: true })
   department_id?: number | null;
 
-  @ManyToOne(() => DepartmentModel, { onDelete: 'SET NULL' })
+  @ManyToOne(() => DepartmentModel, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'department_id' })
   department?: DepartmentModel | null;
-
-  @Column({ type: 'varchar', nullable: true })
-  position?: string | null;
 
   @Column({ default: true })
   is_active: boolean;
