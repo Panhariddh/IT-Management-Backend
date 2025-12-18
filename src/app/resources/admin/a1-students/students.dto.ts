@@ -91,10 +91,6 @@ export class UpdateStudentDto {
   name_en?: string;
 
   @IsOptional()
-  @IsEmail()
-  email?: string;
-
-  @IsOptional()
   @IsString()
   phone?: string;
 
@@ -141,7 +137,6 @@ export class UpdateStudentResponseDto {
     student_id: string;
     name_en: string;
     name_kh: string;
-    email: string;
     image?: string;
     academic_year: string;
     department: string;
