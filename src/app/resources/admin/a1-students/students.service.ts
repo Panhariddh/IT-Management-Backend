@@ -584,8 +584,6 @@ export class StudentService {
         userUpdateData.name_kh = updateStudentDto.name_kh;
       if (updateStudentDto.name_en !== undefined)
         userUpdateData.name_en = updateStudentDto.name_en;
-      if (updateStudentDto.email !== undefined)
-        userUpdateData.email = updateStudentDto.email;
       if (updateStudentDto.phone !== undefined)
         userUpdateData.phone = updateStudentDto.phone;
       if (updateStudentDto.gender !== undefined)
