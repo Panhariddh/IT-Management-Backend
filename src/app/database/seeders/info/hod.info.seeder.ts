@@ -2,7 +2,7 @@ import { AppDataSource } from "src/app/config/data-source";
 import { UserModel } from "../../models/user.model";
 import { DepartmentModel } from "../../models/division/department.model";
 import { Role } from "src/app/common/enum/role.enum";
-import { HodInfoModel } from "../../models/info/hod.info.model";
+import { HodInfoModel } from "../../models/info/hod-info.model";
 
 export class HodInfoSeeder {
   static async seed() {
