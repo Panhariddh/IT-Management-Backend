@@ -1,8 +1,8 @@
 import { Routes } from '@nestjs/core';
-import { AdminModule } from './admin.module';
 import { StudentModule } from './a1-students/students.module';
 import { TeacherModule } from './a2-teachers/teachers.module';
 import { HodModule } from './a3-HODs/hods.module';
+import { AdminModule } from './admin.module';
 
 export const adminRoutes: Routes = [
   {
@@ -20,6 +20,10 @@ export const adminRoutes: Routes = [
       {
         path: 'hods',
         module: HodModule,
+      },
+      {
+        path: 'profile',
+        module: AdminModule,
       },
     ],
   },
