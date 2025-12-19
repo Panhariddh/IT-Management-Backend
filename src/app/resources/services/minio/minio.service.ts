@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { Client } from 'minio';
 import { Readable } from 'stream';
 
@@ -34,7 +34,9 @@ export class MinioService implements OnModuleInit {
     file: Express.Multer.File,
     folder = 'images',
   ): Promise<string> {
-    const objectName = `${folder}/${Date.now()}-${file.originalname}`;
+    // Generate random filename
+    const randomFileName = this.generateRandomFileName(file);
+    const objectName = `${folder}/${randomFileName}`;
 
     await this.client.putObject(
       this.bucket,
@@ -47,6 +49,36 @@ export class MinioService implements OnModuleInit {
     );
 
     return objectName;
+  }
+
+  private generateRandomFileName(file: Express.Multer.File): string {
+    // Generate random string (16 characters)
+    const randomFileName =
+      Math.random().toString(36).substring(2, 10) +
+      Math.random().toString(36).substring(2, 10);
+
+    // Get file extension from original name or mimetype
+    let extension = '';
+    const originalName = file.originalname;
+
+    if (originalName && originalName.includes('.')) {
+      extension = originalName.split('.').pop()?.toLowerCase() || '';
+    } else {
+      // Extract extension from mimetype
+      const mimeToExt: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/png': 'png',
+        'image/gif': 'gif',
+        'image/webp': 'webp',
+        'image/svg+xml': 'svg',
+        'image/bmp': 'bmp',
+        'image/x-icon': 'ico',
+      };
+      extension = mimeToExt[file.mimetype] || 'jpg';
+    }
+
+    return `${randomFileName}.${extension}`;
   }
 
   getProxiedUrl(objectName: string) {
@@ -62,7 +94,8 @@ export class MinioService implements OnModuleInit {
     try {
       const stat = await this.client.statObject(this.bucket, objectName);
       const stream = await this.client.getObject(this.bucket, objectName);
-      const contentType = stat.metaData['content-type'] || this.getContentType(objectName);
+      const contentType =
+        stat.metaData['content-type'] || this.getContentType(objectName);
 
       return {
         stream,
