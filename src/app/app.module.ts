@@ -12,11 +12,11 @@ import { MinioModule } from './resources/services/minio/minio.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
     }),
-     ConfigModule,
-     AuthModule,
-     AdminModule,
-     MinioModule,
-     AppRoutingModule
+    ConfigModule,
+    AuthModule,
+    AdminModule,
+    MinioModule,
+    AppRoutingModule,
   ],
   controllers: [],
   providers: [],
