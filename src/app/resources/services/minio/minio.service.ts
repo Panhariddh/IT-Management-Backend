@@ -34,9 +34,7 @@ export class MinioService implements OnModuleInit {
     file: Express.Multer.File,
     folder = 'images',
   ): Promise<string> {
-    // Generate random filename
-    const randomFileName = this.generateRandomFileName(file);
-    const objectName = `${folder}/${randomFileName}`;
+    const objectName = `${folder}/${Date.now()}-${file.originalname}`;
 
     await this.client.putObject(
       this.bucket,
@@ -51,36 +49,6 @@ export class MinioService implements OnModuleInit {
     return objectName;
   }
 
-  private generateRandomFileName(file: Express.Multer.File): string {
-    // Generate random string (16 characters)
-    const randomFileName =
-      Math.random().toString(36).substring(2, 10) +
-      Math.random().toString(36).substring(2, 10);
-
-    // Get file extension from original name or mimetype
-    let extension = '';
-    const originalName = file.originalname;
-
-    if (originalName && originalName.includes('.')) {
-      extension = originalName.split('.').pop()?.toLowerCase() || '';
-    } else {
-      // Extract extension from mimetype
-      const mimeToExt: Record<string, string> = {
-        'image/jpeg': 'jpg',
-        'image/jpg': 'jpg',
-        'image/png': 'png',
-        'image/gif': 'gif',
-        'image/webp': 'webp',
-        'image/svg+xml': 'svg',
-        'image/bmp': 'bmp',
-        'image/x-icon': 'ico',
-      };
-      extension = mimeToExt[file.mimetype] || 'jpg';
-    }
-
-    return `${randomFileName}.${extension}`;
-  }
-
   getProxiedUrl(objectName: string) {
     const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
     return `${backendUrl}/api/images/${objectName}`;
@@ -92,10 +60,20 @@ export class MinioService implements OnModuleInit {
     contentLength: number;
   }> {
     try {
-      const stat = await this.client.statObject(this.bucket, objectName);
-      const stream = await this.client.getObject(this.bucket, objectName);
-      const contentType =
-        stat.metaData['content-type'] || this.getContentType(objectName);
+      // Decode URL-encoded object name if necessary
+      const decodedObjectName = decodeURIComponent(objectName);
+
+      const stat = await this.client.statObject(this.bucket, decodedObjectName);
+      const stream = await this.client.getObject(
+        this.bucket,
+        decodedObjectName,
+      );
+
+      // Get content type from metadata or file extension
+      let contentType = stat.metaData['content-type'];
+      if (!contentType) {
+        contentType = this.getContentType(decodedObjectName);
+      }
 
       return {
         stream,

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res, NotFoundException } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Param, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { MinioService } from './minio.service';
 
@@ -13,27 +13,35 @@ export class MinioController {
     @Res() res: Response,
   ) {
     try {
-      const objectName = `${folder}/${filename}`;
-      
+      // Properly construct object name with URL encoding
+      const decodedFolder = decodeURIComponent(folder);
+      const decodedFilename = decodeURIComponent(filename);
+      const objectName = `${decodedFolder}/${decodedFilename}`;
+
       // Get the image stream from MinIO
-      const { stream, contentType, contentLength } = 
+      const { stream, contentType, contentLength } =
         await this.minioService.streamImage(objectName);
-      
+
       // Set response headers
       res.set({
         'Content-Type': contentType,
         'Content-Length': contentLength,
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        'Cache-Control': 'public, max-age=31536000',
+        'Content-Disposition': `inline; filename="${filename}"`,
       });
-      
+
       // Pipe the stream to the response
       stream.pipe(res);
-      
+
       // Handle stream errors
-      stream.on('error', () => {
-        throw new NotFoundException('Image not found');
+      stream.on('error', (error) => {
+        console.error('Stream error:', error);
+        if (!res.headersSent) {
+          throw new NotFoundException('Image not found');
+        }
       });
     } catch (error) {
+      console.error('Controller error:', error);
       throw new NotFoundException('Image not found');
     }
   }

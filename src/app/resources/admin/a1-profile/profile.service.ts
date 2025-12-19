@@ -36,6 +36,10 @@ export class ProfileService {
         throw new NotFoundException('Admin profile not found');
       }
 
+      if (user.image && !user.image.startsWith('http')) {
+        user.image = this.minioService.getProxiedUrl(user.image);
+      }
+
       const profileDto: AdminProfileDto = {
         id: user.id,
         name_kh: user.name_kh,
@@ -259,21 +263,22 @@ export class ProfileService {
       // Delete old image if exists
       if (user.image) {
         try {
-          await this.minioService.deleteImage(user.image);
+          const oldObjectName = this.extractObjectName(user.image);
+          if (oldObjectName) {
+            await this.minioService.deleteImage(oldObjectName);
+          }
         } catch (error) {
           console.error('Failed to delete old image:', error);
         }
       }
 
       // Upload new image
-      const fileName = `admin-profiles/${userId}/${Date.now()}-${
-        image.originalname
-      }`;
-      const imageUrl = await this.minioService.uploadImage(
-        image,
-        `admin-profiles/${userId}`,
-      );
+      const fileName = `${Date.now()}-${image.originalname}`;
+      const objectName = `admin-profiles/${fileName}`;
+      await this.minioService.uploadImage(image, `admin-profiles`);
 
+      // Store the full proxied URL
+      const imageUrl = this.minioService.getProxiedUrl(objectName);
       user.image = imageUrl;
       await this.userRepository.save(user);
 
@@ -288,6 +293,20 @@ export class ProfileService {
       }
       throw new InternalServerErrorException('Failed to update profile image');
     }
+  }
+
+  private extractObjectName(imageUrl: string): string | null {
+    try {
+      const url = new URL(imageUrl);
+      const pathParts = url.pathname.split('/');
+      const imagesIndex = pathParts.indexOf('images');
+      if (imagesIndex !== -1) {
+        return pathParts.slice(imagesIndex + 1).join('/');
+      }
+    } catch (error) {
+      return imageUrl.includes('/') ? imageUrl : null;
+    }
+    return null;
   }
 
   private mapToProfileDto(user: UserModel): AdminProfileDto {
