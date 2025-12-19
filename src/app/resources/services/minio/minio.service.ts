@@ -60,10 +60,20 @@ export class MinioService implements OnModuleInit {
     contentLength: number;
   }> {
     try {
-      const stat = await this.client.statObject(this.bucket, objectName);
-      const stream = await this.client.getObject(this.bucket, objectName);
-      const contentType =
-        stat.metaData['content-type'] || this.getContentType(objectName);
+      // Decode URL-encoded object name if necessary
+      const decodedObjectName = decodeURIComponent(objectName);
+
+      const stat = await this.client.statObject(this.bucket, decodedObjectName);
+      const stream = await this.client.getObject(
+        this.bucket,
+        decodedObjectName,
+      );
+
+      // Get content type from metadata or file extension
+      let contentType = stat.metaData['content-type'];
+      if (!contentType) {
+        contentType = this.getContentType(decodedObjectName);
+      }
 
       return {
         stream,
