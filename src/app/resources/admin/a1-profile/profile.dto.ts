@@ -89,3 +89,15 @@ export class ChangePasswordResponseDto {
   success: boolean;
   message: string;
 }
+
+export class GetAdminProfileByIdDto {
+  id: string;
+}
+
+export class UpdateAdminProfileByIdDto extends UpdateAdminProfileDto {
+  id: string;
+}
+
+export class ChangePasswordByIdDto extends ChangePasswordDto {
+  id: string;
+}

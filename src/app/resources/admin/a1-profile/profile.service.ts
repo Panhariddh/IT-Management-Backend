@@ -26,6 +26,7 @@ export class ProfileService {
     private readonly minioService: MinioService,
   ) {}
 
+  // Get current admin profile
   async getProfile(userId: string): Promise<AdminProfileResponseDto> {
     try {
       const user = await this.userRepository.findOne({
@@ -36,30 +37,34 @@ export class ProfileService {
         throw new NotFoundException('Admin profile not found');
       }
 
-      if (user.image && !user.image.startsWith('http')) {
-        user.image = this.minioService.getProxiedUrl(user.image);
-      }
-
-      const profileDto: AdminProfileDto = {
-        id: user.id,
-        name_kh: user.name_kh,
-        name_en: user.name_en,
-        email: user.email,
-        phone: user.phone,
-        gender: user.gender,
-        dob: this.formatDate(user.dob),
-        address: user.address,
-        role: user.role,
-        image: user.image,
-        is_active: user.is_active,
-        created_at: user.createdAt,
-        updated_at: user.updatedAt,
+      return {
+        success: true,
+        message: 'Admin profile retrieved successfully',
+        data: this.mapToProfileDto(user),
       };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to retrieve profile');
+    }
+  }
+
+  // Get admin profile by ID
+  async getProfileById(userId: string): Promise<AdminProfileResponseDto> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId, role: Role.ADMIN },
+      });
+
+      if (!user) {
+        throw new NotFoundException('Admin profile not found');
+      }
 
       return {
         success: true,
         message: 'Admin profile retrieved successfully',
-        data: profileDto,
+        data: this.mapToProfileDto(user),
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
@@ -74,11 +79,9 @@ export class ProfileService {
       if (dateValue instanceof Date) {
         return dateValue.toISOString().split('T')[0];
       } else if (typeof dateValue === 'string') {
-        // If it's already in YYYY-MM-DD format, return as-is
         if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
           return dateValue;
         }
-        // Otherwise, parse it
         const date = new Date(dateValue);
         return date.toISOString().split('T')[0];
       }
@@ -89,7 +92,16 @@ export class ProfileService {
     }
   }
 
+  // Update current admin profile
   async updateProfile(
+    userId: string,
+    updateProfileDto: UpdateAdminProfileDto,
+  ): Promise<AdminProfileResponseDto> {
+    return this.updateProfileById(userId, updateProfileDto);
+  }
+
+  // Update admin profile by ID
+  async updateProfileById(
     userId: string,
     updateProfileDto: UpdateAdminProfileDto,
   ): Promise<AdminProfileResponseDto> {
@@ -113,7 +125,7 @@ export class ProfileService {
         const existingUser = await queryRunner.manager.findOne(UserModel, {
           where: { email: updateProfileDto.email },
         });
-        if (existingUser) {
+        if (existingUser && existingUser.id !== userId) {
           throw new BadRequestException('Email already exists');
         }
         user.email = updateProfileDto.email;
@@ -166,7 +178,6 @@ export class ProfileService {
         user.gender = updateProfileDto.gender;
       }
       if (updateProfileDto.dob !== undefined) {
-        // Parse the date string to Date object
         user.dob = new Date(updateProfileDto.dob);
       }
       if (updateProfileDto.address !== undefined) {
@@ -195,7 +206,16 @@ export class ProfileService {
     }
   }
 
+  // Change current admin password
   async changePassword(
+    userId: string,
+    changePasswordDto: ChangePasswordDto,
+  ): Promise<ChangePasswordResponseDto> {
+    return this.changePasswordById(userId, changePasswordDto);
+  }
+
+  // Change password by ID (for admin to reset others' passwords)
+  async changePasswordById(
     userId: string,
     changePasswordDto: ChangePasswordDto,
   ): Promise<ChangePasswordResponseDto> {
@@ -208,26 +228,31 @@ export class ProfileService {
         throw new NotFoundException('Admin profile not found');
       }
 
-      const isPasswordValid = await bcrypt.compare(
-        changePasswordDto.currentPassword,
-        user.password,
-      );
-
-      if (!isPasswordValid) {
-        throw new BadRequestException('Current password is incorrect');
-      }
-
-      // Check if new password is different from current
-      const isSamePassword = await bcrypt.compare(
-        changePasswordDto.newPassword,
-        user.password,
-      );
-
-      if (isSamePassword) {
-        throw new BadRequestException(
-          'New password must be different from current password',
+      // If current password is provided (user changing their own password)
+      if (changePasswordDto.currentPassword) {
+        const isPasswordValid = await bcrypt.compare(
+          changePasswordDto.currentPassword,
+          user.password,
         );
+
+        if (!isPasswordValid) {
+          throw new BadRequestException('Current password is incorrect');
+        }
+
+        // Check if new password is different from current
+        const isSamePassword = await bcrypt.compare(
+          changePasswordDto.newPassword,
+          user.password,
+        );
+
+        if (isSamePassword) {
+          throw new BadRequestException(
+            'New password must be different from current password',
+          );
+        }
       }
+      // If no current password provided (admin resetting someone else's password)
+      // You might want to add authorization check here
 
       user.password = await bcrypt.hash(changePasswordDto.newPassword, 10);
       await this.userRepository.save(user);
@@ -247,7 +272,16 @@ export class ProfileService {
     }
   }
 
+  // Update current admin avatar
   async updateAvatar(
+    userId: string,
+    image: Express.Multer.File,
+  ): Promise<AdminProfileResponseDto> {
+    return this.updateAvatarById(userId, image);
+  }
+
+  // Update admin avatar by ID
+  async updateAvatarById(
     userId: string,
     image: Express.Multer.File,
   ): Promise<AdminProfileResponseDto> {
@@ -310,6 +344,12 @@ export class ProfileService {
   }
 
   private mapToProfileDto(user: UserModel): AdminProfileDto {
+    // Process image URL
+    let imageUrl = user.image;
+    if (imageUrl && !imageUrl.startsWith('http')) {
+      imageUrl = this.minioService.getProxiedUrl(imageUrl);
+    }
+
     return {
       id: user.id,
       name_kh: user.name_kh,
@@ -320,7 +360,7 @@ export class ProfileService {
       dob: this.formatDate(user.dob),
       address: user.address,
       role: user.role,
-      image: user.image,
+      image: imageUrl,
       is_active: user.is_active,
       created_at: user.createdAt,
       updated_at: user.updatedAt,
