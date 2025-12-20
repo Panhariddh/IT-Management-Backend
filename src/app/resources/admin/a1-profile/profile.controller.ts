@@ -8,6 +8,7 @@ import {
   HttpStatus,
   MaxFileSizeValidator,
   NotFoundException,
+  Param,
   ParseFilePipe,
   Put,
   Req,
@@ -22,8 +23,11 @@ import { JwtAuthGuard } from 'src/app/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/app/common/guards/roles.guard';
 import {
   AdminProfileResponseDto,
+  ChangePasswordByIdDto,
   ChangePasswordDto,
   ChangePasswordResponseDto,
+  GetAdminProfileByIdDto,
+  UpdateAdminProfileByIdDto,
   UpdateAdminProfileDto,
 } from './profile.dto';
 import { ProfileService } from './profile.service';
@@ -60,20 +64,48 @@ export class ProfileController {
     }
   }
 
-  @Put()
-  async updateProfile(
-    @Req() req,
+  @Get(':id')
+  async getProfileById(
+    @Param() params: GetAdminProfileByIdDto,
+  ): Promise<AdminProfileResponseDto> {
+    try {
+      return await this.profileService.getProfileById(params.id);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw new HttpException(
+          {
+            success: false,
+            message: error.message,
+          },
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      throw new HttpException(
+        {
+          success: false,
+          message: 'Failed to fetch profile',
+          error: error.message,
+        },
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  @Put(':id')
+  async updateProfileById(
+    @Param() params: UpdateAdminProfileByIdDto,
     @Body() updateProfileDto: UpdateAdminProfileDto,
   ): Promise<AdminProfileResponseDto> {
     try {
-      // Check if at least one field is being updated
       const hasUpdates = Object.keys(updateProfileDto).length > 0;
       if (!hasUpdates) {
         throw new BadRequestException('No update data provided');
       }
 
-      const userId = req.user.id;
-      return await this.profileService.updateProfile(userId, updateProfileDto);
+      return await this.profileService.updateProfileById(
+        params.id,
+        updateProfileDto,
+      );
     } catch (error) {
       if (
         error instanceof BadRequestException ||
@@ -93,15 +125,14 @@ export class ProfileController {
     }
   }
 
-  @Put('password')
-  async changePassword(
-    @Req() req,
+  @Put('password/:id')
+  async changePasswordById(
+    @Param() params: ChangePasswordByIdDto,
     @Body() changePasswordDto: ChangePasswordDto,
   ): Promise<ChangePasswordResponseDto> {
     try {
-      const userId = req.user.id;
-      return await this.profileService.changePassword(
-        userId,
+      return await this.profileService.changePasswordById(
+        params.id,
         changePasswordDto,
       );
     } catch (error) {
@@ -123,10 +154,10 @@ export class ProfileController {
     }
   }
 
-  @Put('avatar')
+  @Put('avatar/:id')
   @UseInterceptors(FileInterceptor('image'))
-  async updateAvatar(
-    @Req() req,
+  async updateAvatarById(
+    @Param('id') id: string,
     @UploadedFile(
       new ParseFilePipe({
         validators: [
@@ -138,8 +169,7 @@ export class ProfileController {
     image: Express.Multer.File,
   ): Promise<AdminProfileResponseDto> {
     try {
-      const userId = req.user.id;
-      return await this.profileService.updateAvatar(userId, image);
+      return await this.profileService.updateAvatarById(id, image);
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw new HttpException(
