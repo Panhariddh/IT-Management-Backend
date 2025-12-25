@@ -5,11 +5,7 @@ import { DepartmentModel } from 'src/app/database/models/division/department.mod
 import { UserModel } from 'src/app/database/models/user.model';
 import { HodInfoModel } from 'src/app/database/models/info/hod-info.model';
 
-import {
-  DepartmentDetailDto,
-  DepartmentDto,
-  MetaDto,
-} from './department.dto';
+import { DepartmentDetailDto, DepartmentDto, MetaDto } from './department.dto';
 import { SectionModel } from 'src/app/database/models/division/section.model';
 
 interface GetAllDepartmentsParams {
@@ -44,13 +40,14 @@ export class DepartmentService {
     const query = this.departmentRepository
       .createQueryBuilder('department')
       .leftJoinAndSelect('department.head', 'head')
-      .orderBy('department.name', 'ASC'); // Simple alphabetical order
+      .orderBy('department.name', 'ASC'); 
 
     // Apply search filter
     if (search) {
-      const cleanSearch = search.trim();
-      query.where('department.name LIKE :search', { 
-        search: `%${cleanSearch}%` 
+      const cleanSearch = search.trim().toLowerCase();
+
+      query.andWhere('LOWER(department.name) LIKE :search', {
+        search: `%${cleanSearch}%`,
       });
     }
 
@@ -103,7 +100,7 @@ export class DepartmentService {
     return {
       id: department.id,
       name: department.name,
-      head_user_id: department.head_user_id || undefined, 
+      head_user_id: department.head_user_id || undefined,
       head_details: department.head
         ? {
             id: department.head.id,
@@ -128,7 +125,9 @@ export class DepartmentService {
       .getCount();
   }
 
-  private async getSectionCountByDepartment(departmentId: number): Promise<number> {
+  private async getSectionCountByDepartment(
+    departmentId: number,
+  ): Promise<number> {
     return await this.sectionRepository
       .createQueryBuilder('section')
       .where('section.department_id = :departmentId', { departmentId })
