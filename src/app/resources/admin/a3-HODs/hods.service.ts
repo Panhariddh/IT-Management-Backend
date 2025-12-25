@@ -8,15 +8,9 @@ import { Role } from 'src/app/common/enum/role.enum';
 import { HodInfoModel } from 'src/app/database/models/info/hod-info.model';
 import { UserModel } from 'src/app/database/models/user.model';
 import { DepartmentModel } from 'src/app/database/models/division/department.model';
-import {
-  CreateHodDto,
-  HodDetailDto,
-  UpdateHodDto,
-  DataSetupDto,
-  MetaDto,
-  HodDto,
-} from './hods.dto';
+
 import { MinioService } from '../../services/minio/minio.service';
+import { CreateHodDto, DataSetupDto, HodDetailDto, HodDto, MetaDto, UpdateHodDto } from './hods.dto';
 
 interface GetAllHodsParams {
   page: number;
