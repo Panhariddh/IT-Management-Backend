@@ -15,6 +15,9 @@ export class SectionModel {
   @Column()
   name: string;
 
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
   @Column()
   department_id: number;
 
