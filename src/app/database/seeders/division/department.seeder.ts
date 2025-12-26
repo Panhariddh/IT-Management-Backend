@@ -10,18 +10,16 @@ export class DepartmentSeeder {
     const deptRepo = AppDataSource.getRepository(DepartmentModel);
     const userRepo = AppDataSource.getRepository(UserModel);
 
-    // First, fetch all HOD users (HEAD_OF_DEPARTMENT)
     const hodUsers = await userRepo.find({
       where: { role: Role.HEAD_OF_DEPARTMENT },
       order: { id: 'ASC' },
     });
 
-    // Define departments along with a HOD index
     const departments = [
       {
         name: 'Faculty of Medicine',
         description: 'Responsible for medical education, clinical training, and healthcare research.',
-        hodIndex: 0, // Index in hodUsers array
+        hodIndex: 0, 
       },
       {
         name: 'Faculty of Engineering',
