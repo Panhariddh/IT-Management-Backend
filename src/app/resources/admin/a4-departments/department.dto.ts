@@ -95,6 +95,8 @@ export class DepartmentDetailDto {
   name: string;
   description?: string;
   created_at: Date;
+  hod_user_id?: string;
+  hod_name?: string;
   sections: SectionDto[];
 }
 

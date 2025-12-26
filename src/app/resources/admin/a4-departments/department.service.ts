@@ -81,8 +81,8 @@ export class DepartmentService {
       name: dept.name,
       description: dept.description || undefined,
       hod_name: dept.head
-        ? `${dept.head.name_en}${
-            dept.head.name_kh ? ` (${dept.head.name_kh})` : ''
+        ? `${dept.head.name_kh}${
+            dept.head.name_kh ? ` (${dept.head.name_en})` : ''
           }`
         : undefined,
       hod_user_id: dept.head?.id,
@@ -100,7 +100,7 @@ export class DepartmentService {
     return {
       departments: departmentDtos,
       meta,
-      dataSetup, 
+      dataSetup,
     };
   }
 
@@ -110,7 +110,7 @@ export class DepartmentService {
       .select(['user.id', 'user.name_en', 'user.name_kh'])
       .where('user.is_active = :isActive', { isActive: true })
       .andWhere('(user.role = :hodRole)', {
-        hodRole: Role.HEAD_OF_DEPARTMENT, 
+        hodRole: Role.HEAD_OF_DEPARTMENT,
       })
       .orderBy('user.name_en', 'ASC')
       .getMany();
@@ -127,8 +127,10 @@ export class DepartmentService {
   }
 
   async getDepartmentById(id: string): Promise<DepartmentDetailDto> {
+    // Add 'head' to relations to load the HOD information
     const department = await this.departmentRepository.findOne({
       where: { id: parseInt(id) },
+      relations: ['head'], // Add this line to load the head relation
     });
 
     if (!department) {
@@ -152,6 +154,12 @@ export class DepartmentService {
       id: department.id,
       name: department.name,
       description: department.description || undefined,
+      hod_name: department.head
+        ? `${department.head.name_kh}${
+            department.head.name_kh ? ` (${department.head.name_en})` : ''
+          }`
+        : undefined,
+      hod_user_id: department.head?.id,
       created_at: department.createdAt,
       sections: sectionDtos,
     };
@@ -189,7 +197,7 @@ export class DepartmentService {
     const department = this.departmentRepository.create({
       name: createDepartmentDto.name,
       description: createDepartmentDto.description,
-      ...(headUser && { head: headUser }), 
+      ...(headUser && { head: headUser }),
     });
 
     const savedDepartment = await this.departmentRepository.save(department);
@@ -212,9 +220,9 @@ export class DepartmentService {
         description: departmentWithHead.description || undefined,
         hod_user_id: departmentWithHead.head?.id,
         hod_name: departmentWithHead.head
-          ? `${departmentWithHead.head.name_en}${
+          ? `${departmentWithHead.head.name_kh}${
               departmentWithHead.head.name_kh
-                ? ` (${departmentWithHead.head.name_kh})`
+                ? ` (${departmentWithHead.head.name_en})`
                 : ''
             }`
           : undefined,
@@ -285,9 +293,9 @@ export class DepartmentService {
         description: savedDepartment.description || undefined,
         hod_user_id: savedDepartment.head?.id,
         hod_name: savedDepartment.head
-          ? `${savedDepartment.head.name_en}${
+          ? `${savedDepartment.head.name_kh}${
               savedDepartment.head.name_kh
-                ? ` (${savedDepartment.head.name_kh})`
+                ? ` (${savedDepartment.head.name_en})`
                 : ''
             }`
           : undefined,
@@ -485,7 +493,7 @@ export class DepartmentService {
       updateData.name = updateSectionDto.name;
     if (updateSectionDto.description !== undefined)
       updateData.description = updateSectionDto.description;
-    
+
     if (updateSectionDto.department_id !== undefined) {
       updateData.department_id = updateSectionDto.department_id;
     }
