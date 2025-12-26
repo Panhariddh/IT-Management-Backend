@@ -1,26 +1,26 @@
 import {
-  Controller,
-  Get,
-  UseGuards,
-  Query,
-  HttpStatus,
-  HttpException,
-  Param,
   BadRequestException,
-  UploadedFile,
-  Post,
-  UseInterceptors,
   Body,
-  NotFoundException,
-  HttpCode,
+  Controller,
   Delete,
+  Get,
+  HttpCode,
+  HttpException,
+  HttpStatus,
+  NotFoundException,
+  Param,
   Patch,
+  Post,
+  Query,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
-import { JwtAuthGuard } from 'src/app/common/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/app/common/guards/roles.guard';
+import { FileInterceptor } from '@nestjs/platform-express/multer';
 import { Roles } from 'src/app/common/decorators/roles.decorator';
 import { Role } from 'src/app/common/enum/role.enum';
-import { HodService } from './hods.service';
+import { JwtAuthGuard } from 'src/app/common/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/app/common/guards/roles.guard';
 import {
   CreateHodDto,
   CreateHodResponseDto,
@@ -28,8 +28,8 @@ import {
   HodsResponseDto,
   UpdateHodDto,
   UpdateHodResponseDto,
-} from './hods.dto';
-import { FileInterceptor } from '@nestjs/platform-express/multer';
+} from '../a3-HODs/hods.dto';
+import { HodService } from '../a3-HODs/hods.service';
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -50,7 +50,13 @@ export class HodController {
     @Query('is_active') isActive?: string,
   ): Promise<HodsResponseDto> {
     try {
-      const allowedSortFields = ['name_en', 'name_kh', 'dob', 'hod_id', 'created_at'];
+      const allowedSortFields = [
+        'name_en',
+        'name_kh',
+        'dob',
+        'hod_id',
+        'created_at',
+      ];
       if (!allowedSortFields.includes(sortBy)) {
         sortBy = 'name_en';
       }
@@ -162,11 +168,7 @@ export class HodController {
     try {
       // Validate file type if image is provided
       if (imageFile) {
-        const allowedMimeTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-        ];
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
         if (!allowedMimeTypes.includes(imageFile.mimetype)) {
           throw new BadRequestException(
             'Invalid image format. Allowed: JPEG, PNG, JPG',
@@ -182,10 +184,7 @@ export class HodController {
         }
       }
 
-      const hod = await this.hodService.createHod(
-        createHodDto,
-        imageFile,
-      );
+      const hod = await this.hodService.createHod(createHodDto, imageFile);
 
       return {
         success: true,
@@ -221,11 +220,7 @@ export class HodController {
     try {
       // Validate file type if image is provided
       if (imageFile) {
-        const allowedMimeTypes = [
-          'image/jpeg',
-          'image/png',
-          'image/jpg',
-        ];
+        const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
         if (!allowedMimeTypes.includes(imageFile.mimetype)) {
           throw new BadRequestException(
             'Invalid image format. Allowed: JPEG, PNG, JPG',
@@ -247,11 +242,7 @@ export class HodController {
         throw new BadRequestException('No update data provided');
       }
 
-      const hod = await this.hodService.updateHod(
-        id,
-        updateHodDto,
-        imageFile,
-      );
+      const hod = await this.hodService.updateHod(id, updateHodDto, imageFile);
 
       return {
         success: true,

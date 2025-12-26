@@ -8,14 +8,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import * as bcrypt from 'bcrypt';
 import { Role } from 'src/app/common/enum/role.enum';
 import { UserModel } from 'src/app/database/models/user.model';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
+
 import { MinioService } from '../../services/minio/minio.service';
 import {
-  AdminProfileDto,
-  AdminProfileResponseDto,
   ChangePasswordDto,
   ChangePasswordResponseDto,
-  UpdateAdminProfileDto,
+  ProfileDto,
+  ProfileResponseDto,
+  UpdateProfileByIdDto,
 } from './profile.dto';
 
 @Injectable()
@@ -26,85 +27,73 @@ export class ProfileService {
     private readonly minioService: MinioService,
   ) {}
 
-  // Get current admin profile
-  async getProfile(userId: string): Promise<AdminProfileResponseDto> {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId, role: Role.ADMIN },
-      });
-
-      if (!user) {
-        throw new NotFoundException('Admin profile not found');
-      }
-
-      return {
-        success: true,
-        message: 'Admin profile retrieved successfully',
-        data: this.mapToProfileDto(user),
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to retrieve profile');
-    }
-  }
-
-  // Get admin profile by ID
-  async getProfileById(userId: string): Promise<AdminProfileResponseDto> {
-    try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId, role: Role.ADMIN },
-      });
-
-      if (!user) {
-        throw new NotFoundException('Admin profile not found');
-      }
-
-      return {
-        success: true,
-        message: 'Admin profile retrieved successfully',
-        data: this.mapToProfileDto(user),
-      };
-    } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new InternalServerErrorException('Failed to retrieve profile');
-    }
-  }
-
-  private formatDate(dateValue: Date | string): string {
-    try {
-      if (dateValue instanceof Date) {
-        return dateValue.toISOString().split('T')[0];
-      } else if (typeof dateValue === 'string') {
-        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
-          return dateValue;
-        }
-        const date = new Date(dateValue);
-        return date.toISOString().split('T')[0];
-      }
-      return '';
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return '';
-    }
-  }
-
-  // Update current admin profile
-  async updateProfile(
+  // Get profile by ID with specific role-based access
+  async getProfileById(
     userId: string,
-    updateProfileDto: UpdateAdminProfileDto,
-  ): Promise<AdminProfileResponseDto> {
-    return this.updateProfileById(userId, updateProfileDto);
+    roles: Role[] = [],
+  ): Promise<ProfileResponseDto> {
+    try {
+      let query = this.userRepository.createQueryBuilder('user');
+
+      if (roles && roles.length > 0) {
+        query = query.where('user.id = :userId AND user.role IN (:...roles)', {
+          userId,
+          roles,
+        });
+      } else {
+        query = query.where('user.id = :userId', { userId });
+      }
+
+      const user = await query.getOne();
+
+      if (!user) {
+        throw new NotFoundException('Profile not found');
+      }
+
+      return {
+        success: true,
+        message: 'Profile retrieved successfully',
+        data: this.mapToProfileDto(user),
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      console.error('Error in getProfileById:', error);
+      throw new InternalServerErrorException('Failed to retrieve profile');
+    }
   }
 
-  // Update admin profile by ID
+  // Get current user profile
+  async getCurrentProfile(userId: string): Promise<ProfileResponseDto> {
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+      });
+
+      if (!user) {
+        throw new NotFoundException('Profile not found');
+      }
+
+      return {
+        success: true,
+        message: 'Profile retrieved successfully',
+        data: this.mapToProfileDto(user),
+      };
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Failed to retrieve profile');
+    }
+  }
+
+  // Update profile by ID with specific role-based access
   async updateProfileById(
     userId: string,
-    updateProfileDto: UpdateAdminProfileDto,
-  ): Promise<AdminProfileResponseDto> {
+    updateProfileDto: UpdateProfileByIdDto,
+    roles: Role[] = [],
+  ): Promise<ProfileResponseDto> {
     const queryRunner =
       this.userRepository.manager.connection.createQueryRunner();
 
@@ -112,77 +101,48 @@ export class ProfileService {
     await queryRunner.startTransaction();
 
     try {
+      // Build where condition properly
+      let whereCondition: any = { id: userId };
+
+      // Apply role-based access
+      if (roles && roles.length > 0) {
+        // For single role, use equality
+        if (roles.length === 1) {
+          // Use the string, not array
+          whereCondition.role = roles[0];
+        } else {
+          // For multiple roles, use In operator
+          whereCondition.role = In(roles);
+        }
+      }
+
       const user = await queryRunner.manager.findOne(UserModel, {
-        where: { id: userId, role: Role.ADMIN },
+        where: whereCondition,
       });
 
       if (!user) {
-        throw new NotFoundException('Admin profile not found');
+        console.log('User not found with conditions:', whereCondition);
+        throw new NotFoundException('Profile not found');
       }
 
-      // Check if email is being changed and if it's already taken
+      // Email validation
       if (updateProfileDto.email && updateProfileDto.email !== user.email) {
+        console.log('Checking email uniqueness...');
         const existingUser = await queryRunner.manager.findOne(UserModel, {
           where: { email: updateProfileDto.email },
         });
         if (existingUser && existingUser.id !== userId) {
+          console.log('Email already exists:', updateProfileDto.email);
           throw new BadRequestException('Email already exists');
         }
         user.email = updateProfileDto.email;
       }
 
-      // Handle password change if provided
-      if (updateProfileDto.currentPassword && updateProfileDto.newPassword) {
-        const isPasswordValid = await bcrypt.compare(
-          updateProfileDto.currentPassword,
-          user.password,
-        );
-
-        if (!isPasswordValid) {
-          throw new BadRequestException('Current password is incorrect');
-        }
-
-        // Check if new password is different from current
-        const isSamePassword = await bcrypt.compare(
-          updateProfileDto.newPassword,
-          user.password,
-        );
-
-        if (isSamePassword) {
-          throw new BadRequestException(
-            'New password must be different from current password',
-          );
-        }
-
-        user.password = await bcrypt.hash(updateProfileDto.newPassword, 10);
-      } else if (
-        (updateProfileDto.currentPassword && !updateProfileDto.newPassword) ||
-        (!updateProfileDto.currentPassword && updateProfileDto.newPassword)
-      ) {
-        throw new BadRequestException(
-          'Both current password and new password are required to change password',
-        );
-      }
+      // Password change logic
+      await this.handlePasswordChange(updateProfileDto, user);
 
       // Update other fields
-      if (updateProfileDto.name_kh !== undefined) {
-        user.name_kh = updateProfileDto.name_kh;
-      }
-      if (updateProfileDto.name_en !== undefined) {
-        user.name_en = updateProfileDto.name_en;
-      }
-      if (updateProfileDto.phone !== undefined) {
-        user.phone = updateProfileDto.phone;
-      }
-      if (updateProfileDto.gender !== undefined) {
-        user.gender = updateProfileDto.gender;
-      }
-      if (updateProfileDto.dob !== undefined) {
-        user.dob = new Date(updateProfileDto.dob);
-      }
-      if (updateProfileDto.address !== undefined) {
-        user.address = updateProfileDto.address;
-      }
+      this.updateUserFields(user, updateProfileDto);
 
       await queryRunner.manager.save(user);
       await queryRunner.commitTransaction();
@@ -206,53 +166,53 @@ export class ProfileService {
     }
   }
 
-  // Change current admin password
-  async changePassword(
-    userId: string,
-    changePasswordDto: ChangePasswordDto,
-  ): Promise<ChangePasswordResponseDto> {
-    return this.changePasswordById(userId, changePasswordDto);
-  }
-
-  // Change password by ID (for admin to reset others' passwords)
+  // Change password by ID with specific role-based access
   async changePasswordById(
     userId: string,
     changePasswordDto: ChangePasswordDto,
+    roles: Role[] = [],
   ): Promise<ChangePasswordResponseDto> {
     try {
+      // Build where condition properly
+      let whereCondition: any = { id: userId };
+
+      // Apply role-based access
+      if (roles && roles.length > 0) {
+        // For single role, use equality
+        if (roles.length === 1) {
+          whereCondition.role = roles[0];
+        } else {
+          whereCondition.role = In(roles);
+        }
+      }
+
       const user = await this.userRepository.findOne({
-        where: { id: userId, role: Role.ADMIN },
+        where: whereCondition,
       });
 
       if (!user) {
-        throw new NotFoundException('Admin profile not found');
+        throw new NotFoundException('Profile not found');
       }
 
-      // If current password is provided (user changing their own password)
-      if (changePasswordDto.currentPassword) {
-        const isPasswordValid = await bcrypt.compare(
-          changePasswordDto.currentPassword,
-          user.password,
-        );
+      const isPasswordValid = await bcrypt.compare(
+        changePasswordDto.currentPassword,
+        user.password,
+      );
 
-        if (!isPasswordValid) {
-          throw new BadRequestException('Current password is incorrect');
-        }
-
-        // Check if new password is different from current
-        const isSamePassword = await bcrypt.compare(
-          changePasswordDto.newPassword,
-          user.password,
-        );
-
-        if (isSamePassword) {
-          throw new BadRequestException(
-            'New password must be different from current password',
-          );
-        }
+      if (!isPasswordValid) {
+        throw new BadRequestException('Current password is incorrect');
       }
-      // If no current password provided (admin resetting someone else's password)
-      // You might want to add authorization check here
+
+      const isSamePassword = await bcrypt.compare(
+        changePasswordDto.newPassword,
+        user.password,
+      );
+
+      if (isSamePassword) {
+        throw new BadRequestException(
+          'New password must be different from current password',
+        );
+      }
 
       user.password = await bcrypt.hash(changePasswordDto.newPassword, 10);
       await this.userRepository.save(user);
@@ -272,47 +232,44 @@ export class ProfileService {
     }
   }
 
-  // Update current admin avatar
-  async updateAvatar(
-    userId: string,
-    image: Express.Multer.File,
-  ): Promise<AdminProfileResponseDto> {
-    return this.updateAvatarById(userId, image);
-  }
-
-  // Update admin avatar by ID
+  // Update avatar by ID with specific role-based access
   async updateAvatarById(
     userId: string,
     image: Express.Multer.File,
-  ): Promise<AdminProfileResponseDto> {
+    roles: Role[] = [],
+  ): Promise<ProfileResponseDto> {
     try {
-      const user = await this.userRepository.findOne({
-        where: { id: userId, role: Role.ADMIN },
-      });
+      let whereCondition: any = { id: userId };
 
-      if (!user) {
-        throw new NotFoundException('Admin profile not found');
-      }
-
-      // Delete old image if exists
-      if (user.image) {
-        try {
-          const oldObjectName = this.extractObjectName(user.image);
-          if (oldObjectName) {
-            await this.minioService.deleteImage(oldObjectName);
-          }
-        } catch (error) {
-          console.error('Failed to delete old image:', error);
+      if (roles && roles.length > 0) {
+        if (roles.length === 1) {
+          whereCondition.role = roles[0];
+        } else {
+          whereCondition.role = In(roles);
         }
       }
 
-      // Upload new image
-      const fileName = `${Date.now()}-${image.originalname}`;
-      const objectName = `admin-profiles/${fileName}`;
-      await this.minioService.uploadImage(image, `admin-profiles`);
+      const user = await this.userRepository.findOne({
+        where: whereCondition,
+      });
 
-      // Store the full proxied URL
+      if (!user) {
+        throw new NotFoundException('Profile not found');
+      }
+
+      // Delete old image
+      if (user.image) {
+        await this.deleteOldImage(user.image);
+      }
+
+      // Upload new image based on role-specific folder
+      const folder = `${user.role.toLowerCase()}-profiles`;
+      const fileName = `${Date.now()}-${image.originalname}`;
+      const objectName = `${folder}/${fileName}`;
+
+      await this.minioService.uploadImage(image, folder);
       const imageUrl = this.minioService.getProxiedUrl(objectName);
+
       user.image = imageUrl;
       await this.userRepository.save(user);
 
@@ -329,6 +286,81 @@ export class ProfileService {
     }
   }
 
+  // Private helper methods
+  private async handlePasswordChange(
+    updateProfileDto: UpdateProfileByIdDto,
+    user: UserModel,
+  ): Promise<void> {
+    if (updateProfileDto.currentPassword && updateProfileDto.newPassword) {
+      const isPasswordValid = await bcrypt.compare(
+        updateProfileDto.currentPassword,
+        user.password,
+      );
+
+      if (!isPasswordValid) {
+        throw new BadRequestException('Current password is incorrect');
+      }
+
+      const isSamePassword = await bcrypt.compare(
+        updateProfileDto.newPassword,
+        user.password,
+      );
+
+      if (isSamePassword) {
+        throw new BadRequestException(
+          'New password must be different from current password',
+        );
+      }
+
+      user.password = await bcrypt.hash(updateProfileDto.newPassword, 10);
+    } else if (
+      (updateProfileDto.currentPassword && !updateProfileDto.newPassword) ||
+      (!updateProfileDto.currentPassword && updateProfileDto.newPassword)
+    ) {
+      throw new BadRequestException(
+        'Both current password and new password are required to change password',
+      );
+    }
+  }
+
+  // Update user fields
+  private updateUserFields(
+    user: UserModel,
+    updateProfileDto: UpdateProfileByIdDto,
+  ): void {
+    const fields = [
+      'name_kh',
+      'name_en',
+      'phone',
+      'gender',
+      'dob',
+      'address',
+    ] as const;
+
+    fields.forEach((field) => {
+      if (updateProfileDto[field] !== undefined) {
+        if (field === 'dob') {
+          user[field] = new Date(updateProfileDto[field] as string);
+        } else {
+          user[field] = updateProfileDto[field] as any;
+        }
+      }
+    });
+  }
+
+  // Delete old image
+  private async deleteOldImage(imageUrl: string): Promise<void> {
+    try {
+      const oldObjectName = this.extractObjectName(imageUrl);
+      if (oldObjectName) {
+        await this.minioService.deleteImage(oldObjectName);
+      }
+    } catch (error) {
+      console.error('Failed to delete old image:', error);
+    }
+  }
+
+  // Extract object name from image URL
   private extractObjectName(imageUrl: string): string | null {
     try {
       const url = new URL(imageUrl);
@@ -343,8 +375,27 @@ export class ProfileService {
     return null;
   }
 
-  private mapToProfileDto(user: UserModel): AdminProfileDto {
-    // Process image URL
+  // Format date
+  private formatDate(dateValue: Date | string): string {
+    try {
+      if (dateValue instanceof Date) {
+        return dateValue.toISOString().split('T')[0];
+      } else if (typeof dateValue === 'string') {
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateValue)) {
+          return dateValue;
+        }
+        const date = new Date(dateValue);
+        return date.toISOString().split('T')[0];
+      }
+      return '';
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return '';
+    }
+  }
+
+  // Map user to profile DTO
+  private mapToProfileDto(user: UserModel): ProfileDto {
     let imageUrl = user.image;
     if (imageUrl && !imageUrl.startsWith('http')) {
       imageUrl = this.minioService.getProxiedUrl(imageUrl);
