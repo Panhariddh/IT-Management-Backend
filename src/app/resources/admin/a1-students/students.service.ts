@@ -2,12 +2,15 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
+import * as bcrypt from 'bcrypt';
 import { Role } from 'src/app/common/enum/role.enum';
+import { AcademicYearModel } from 'src/app/database/models/academic.year.model';
+import { DepartmentModel } from 'src/app/database/models/division/department.model';
+import { ProgramModel } from 'src/app/database/models/division/program.model';
+import { SectionModel } from 'src/app/database/models/division/section.model';
 import { StudentInfoModel } from 'src/app/database/models/info/student-info.model';
 import { UserModel } from 'src/app/database/models/user.model';
-import { DepartmentModel } from 'src/app/database/models/division/department.model';
-import { SectionModel } from 'src/app/database/models/division/section.model';
-import { ProgramModel } from 'src/app/database/models/division/program.model';
+import { MinioService } from '../../services/minio/minio.service';
 import {
   CreateStudentDto,
   DataSetupDto,
@@ -16,9 +19,6 @@ import {
   StudentDto,
   UpdateStudentDto,
 } from './students.dto';
-import { AcademicYearModel } from 'src/app/database/models/academic.year.model';
-import { MinioService } from '../../services/minio/minio.service';
-import * as bcrypt from 'bcrypt';
 
 interface GetAllStudentsParams {
   page: number;
@@ -457,6 +457,7 @@ export class StudentService {
       role: Role.STUDENT,
       is_active: true,
       image: imageUrl,
+      passwordChanged: false,
     });
 
     const savedUser = await this.userRepository.save(user);
@@ -546,7 +547,7 @@ export class StudentService {
             updateStudentDto.department_id || studentInfo.department_id,
           section_id: updateStudentDto.section_id || studentInfo.section_id,
           program_id: updateStudentDto.program_id || studentInfo.program_id,
-          academic_year_id: studentInfo.academic_year_id, 
+          academic_year_id: studentInfo.academic_year_id,
         };
         await this.validateReferences(referencesToValidate);
       }
