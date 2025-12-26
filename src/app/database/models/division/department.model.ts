@@ -2,7 +2,7 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToOne,
+  ManyToOne, 
   JoinColumn,
 } from 'typeorm';
 import { UserModel } from '../user.model';
@@ -18,10 +18,10 @@ export class DepartmentModel {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @OneToOne(() => UserModel, { nullable: true })
+  @ManyToOne(() => UserModel, { nullable: true })
   @JoinColumn({
-    name: 'head_user_id',
-    referencedColumnName: 'id', // users.id (UUID)
+    name: 'hod_user_id',
+    referencedColumnName: 'id',
   })
   head?: UserModel;
 
@@ -32,4 +32,3 @@ export class DepartmentModel {
   })
   createdAt: Date;
 }
-

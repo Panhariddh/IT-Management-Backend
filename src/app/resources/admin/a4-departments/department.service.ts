@@ -83,6 +83,12 @@ export class DepartmentService {
       id: dept.id,
       name: dept.name,
       description: dept.description || undefined,
+      hod_name: dept.head
+        ? `${dept.head.name_en}${
+            dept.head.name_kh ? ` (${dept.head.name_kh})` : ''
+          }`
+        : undefined,
+      hod_user_id: dept.head?.id,
       created_at: dept.createdAt,
     }));
 
@@ -175,14 +181,14 @@ export class DepartmentService {
     // 🔥 IMPORTANT: use undefined, NOT null
     let headUser: UserModel | undefined;
 
-    if (createDepartmentDto.head_user_id) {
+    if (createDepartmentDto.hod_user_id) {
       const user = await this.userRepository.findOne({
-        where: { id: createDepartmentDto.head_user_id },
+        where: { id: createDepartmentDto.hod_user_id },
       });
 
       if (!user) {
         throw new NotFoundException(
-          `User with ID ${createDepartmentDto.head_user_id} not found`,
+          `User with ID ${createDepartmentDto.hod_user_id} not found`,
         );
       }
 
@@ -216,8 +222,8 @@ export class DepartmentService {
         id: departmentWithHead.id,
         name: departmentWithHead.name,
         description: departmentWithHead.description || undefined,
-        head_user_id: departmentWithHead.head?.id,
-        head_name: departmentWithHead.head
+        hod_user_id: departmentWithHead.head?.id,
+        hod_name: departmentWithHead.head
           ? `${departmentWithHead.head.name_en}${
               departmentWithHead.head.name_kh
                 ? ` (${departmentWithHead.head.name_kh})`
@@ -270,14 +276,14 @@ export class DepartmentService {
     }
 
     // 4️⃣ Update HEAD via relation (FINAL FIX)
-    if (updateDepartmentDto.head_user_id !== undefined) {
+    if (updateDepartmentDto.hod_user_id !== undefined) {
       const headUser = await this.userRepository.findOne({
-        where: { id: updateDepartmentDto.head_user_id },
+        where: { id: updateDepartmentDto.hod_user_id },
       });
 
       if (!headUser) {
         throw new NotFoundException(
-          `User with ID ${updateDepartmentDto.head_user_id} not found`,
+          `User with ID ${updateDepartmentDto.hod_user_id} not found`,
         );
       }
 
@@ -295,8 +301,8 @@ export class DepartmentService {
         id: savedDepartment.id,
         name: savedDepartment.name,
         description: savedDepartment.description || undefined,
-        head_user_id: savedDepartment.head?.id,
-        head_name: savedDepartment.head
+        hod_user_id: savedDepartment.head?.id,
+        hod_name: savedDepartment.head
           ? `${savedDepartment.head.name_en}${
               savedDepartment.head.name_kh
                 ? ` (${savedDepartment.head.name_kh})`
