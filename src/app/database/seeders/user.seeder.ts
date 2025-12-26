@@ -145,8 +145,8 @@ export class UserSeeder {
       // Teacher 4
       {
         image: defaultAvatar,
-        name_kh: 'រិទ្ធិ',
-        name_en: 'Rithy',
+        name_kh: 'រិទ្ធិចន្ទ',
+        name_en: 'RithyChan',
         email: 'teacher4@example.com',
         password: await hashPassword('123456'),
         phone: '012345683',

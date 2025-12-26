@@ -30,6 +30,7 @@ import {
   UpdateDepartmentResponseDto,
   CreateDepartmentDto,
   CreateDepartmentResponseDto,
+
 } from './department.dto';
 
 @Controller()
@@ -57,6 +58,7 @@ export class DepartmentController {
         message: 'Department list fetched successfully',
         data: result.departments,
         meta: result.meta,
+        data_setup: result.dataSetup,
       };
     } catch (error) {
       throw new HttpException(
@@ -71,38 +73,75 @@ export class DepartmentController {
   }
 
   // Get a single department by ID
-  @Get(':id')
-  async getADepartment(@Param('id') id: string): Promise<{
-    success: boolean;
-    message: string;
-    data: DepartmentDetailDto;
-  }> {
-    try {
-      const department = await this.departmentService.getDepartmentById(id);
+@Get(':id')
+async getADepartment(@Param('id') id: string): Promise<{
+  success: boolean;
+  message: string;
+  data: DepartmentDetailDto;
+}> {
+  try {
+    // Validate ID parameter
+    if (!id || isNaN(parseInt(id))) {
+      throw new BadRequestException('Invalid department ID');
+    }
 
-      if (!department) {
+    const department = await this.departmentService.getDepartmentById(id);
+
+    return {
+      success: true,
+      message: 'Department details fetched successfully',
+      data: department,
+    };
+  } catch (error) {
+    if (
+      error instanceof NotFoundException ||
+      error instanceof BadRequestException
+    ) {
+      throw new HttpException(
+        {
+          success: false,
+          message: error.message,
+        },
+        error instanceof NotFoundException ? HttpStatus.NOT_FOUND : HttpStatus.BAD_REQUEST,
+      );
+    }
+    throw new HttpException(
+      {
+        success: false,
+        message: 'Failed to fetch department details',
+        error: error.message,
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR,
+    );
+  }
+}
+
+  // Create a new department
+  @Post()
+  async createDepartment(
+    @Body() createDepartmentDto: CreateDepartmentDto,
+  ): Promise<CreateDepartmentResponseDto> {
+    try {
+      const result =
+        await this.departmentService.createDepartment(createDepartmentDto);
+      return result;
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
         throw new HttpException(
           {
             success: false,
-            message: 'Department not found',
+            message: error.message,
           },
-          HttpStatus.NOT_FOUND,
+          HttpStatus.BAD_REQUEST,
         );
-      }
-
-      return {
-        success: true,
-        message: 'Department details fetched successfully',
-        data: department,
-      };
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
       }
       throw new HttpException(
         {
           success: false,
-          message: 'Failed to fetch department details',
+          message: 'Failed to create department',
           error: error.message,
         },
         HttpStatus.INTERNAL_SERVER_ERROR,
@@ -110,112 +149,75 @@ export class DepartmentController {
     }
   }
 
-
-  // Create a new department
-@Post()
-async createDepartment(
-  @Body() createDepartmentDto: CreateDepartmentDto,
-): Promise<CreateDepartmentResponseDto> {
-  try {
-    const result = await this.departmentService.createDepartment(
-      createDepartmentDto,
-    );
-    return result;
-  } catch (error) {
-    if (
-      error instanceof BadRequestException ||
-      error instanceof NotFoundException
-    ) {
+  // Update a department
+  @Patch(':id')
+  async updateDepartment(
+    @Param('id') id: string,
+    @Body() updateDepartmentDto: UpdateDepartmentDto,
+  ): Promise<UpdateDepartmentResponseDto> {
+    try {
+      const result = await this.departmentService.updateDepartment(
+        id,
+        updateDepartmentDto,
+      );
+      return result;
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw new HttpException(
+          {
+            success: false,
+            message: error.message,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new HttpException(
         {
           success: false,
-          message: error.message,
+          message: 'Failed to update department',
+          error: error.message,
         },
-        HttpStatus.BAD_REQUEST,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-    throw new HttpException(
-      {
-        success: false,
-        message: 'Failed to create department',
-        error: error.message,
-      },
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
   }
-}
 
-// Update a department
-@Patch(':id')
-async updateDepartment(
-  @Param('id') id: string,
-  @Body() updateDepartmentDto: UpdateDepartmentDto,
-): Promise<UpdateDepartmentResponseDto> {
-  try {
-    const result = await this.departmentService.updateDepartment(
-      id,
-      updateDepartmentDto,
-    );
-    return result;
-  } catch (error) {
-    if (
-      error instanceof BadRequestException ||
-      error instanceof NotFoundException
-    ) {
+  // Delete a department
+  @Delete(':id')
+  @HttpCode(HttpStatus.OK)
+  async deleteDepartment(@Param('id') id: string): Promise<{
+    success: boolean;
+    message: string;
+  }> {
+    try {
+      const result = await this.departmentService.deleteDepartment(id);
+      return result;
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw new HttpException(
+          {
+            success: false,
+            message: error.message,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
       throw new HttpException(
         {
           success: false,
-          message: error.message,
+          message: 'Failed to delete department',
+          error: error.message,
         },
-        HttpStatus.BAD_REQUEST,
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-    throw new HttpException(
-      {
-        success: false,
-        message: 'Failed to update department',
-        error: error.message,
-      },
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
   }
-}
-
-// Delete a department
-@Delete(':id')
-@HttpCode(HttpStatus.OK)
-async deleteDepartment(
-  @Param('id') id: string,
-): Promise<{
-  success: boolean;
-  message: string;
-}> {
-  try {
-    const result = await this.departmentService.deleteDepartment(id);
-    return result;
-  } catch (error) {
-    if (
-      error instanceof BadRequestException ||
-      error instanceof NotFoundException
-    ) {
-      throw new HttpException(
-        {
-          success: false,
-          message: error.message,
-        },
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    throw new HttpException(
-      {
-        success: false,
-        message: 'Failed to delete department',
-        error: error.message,
-      },
-      HttpStatus.INTERNAL_SERVER_ERROR,
-    );
-  }
-}
 
   // Get a single section in a department
   @Get(':departmentId/sections/:sectionId')

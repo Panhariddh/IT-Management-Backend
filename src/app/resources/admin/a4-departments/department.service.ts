@@ -14,6 +14,7 @@ import {
   CreateDepartmentResponseDto,
   CreateSectionDto,
   CreateUpdateSectionResponseDto,
+  DataSetupDto,
   DepartmentDetailDto,
   DepartmentDto,
   MetaDto,
@@ -22,8 +23,10 @@ import {
   UpdateDepartmentDto,
   UpdateDepartmentResponseDto,
   UpdateSectionDto,
+  UserOptionDto,
 } from './department.dto';
 import { SectionModel } from 'src/app/database/models/division/section.model';
+import { Role } from 'src/app/common/enum/role.enum';
 
 interface GetAllDepartmentsParams {
   page: number;
@@ -34,8 +37,8 @@ interface GetAllDepartmentsParams {
 interface GetAllDepartmentsResult {
   departments: DepartmentDto[];
   meta: MetaDto;
+  dataSetup: DataSetupDto;
 }
-
 @Injectable()
 export class DepartmentService {
   constructor(
@@ -54,17 +57,13 @@ export class DepartmentService {
   ): Promise<GetAllDepartmentsResult> {
     const { page, limit, search } = params;
     const skip = (page - 1) * limit;
-
-    // Build query
     const query = this.departmentRepository
       .createQueryBuilder('department')
       .leftJoinAndSelect('department.head', 'head')
       .orderBy('department.name', 'ASC');
 
-    // Apply search filter
     if (search) {
       const cleanSearch = search.trim().toLowerCase();
-
       query.andWhere('LOWER(department.name) LIKE :search', {
         search: `%${cleanSearch}%`,
       });
@@ -81,6 +80,12 @@ export class DepartmentService {
       id: dept.id,
       name: dept.name,
       description: dept.description || undefined,
+      hod_name: dept.head
+        ? `${dept.head.name_kh}${
+            dept.head.name_kh ? ` (${dept.head.name_en})` : ''
+          }`
+        : undefined,
+      hod_user_id: dept.head?.id,
       created_at: dept.createdAt,
     }));
 
@@ -90,15 +95,42 @@ export class DepartmentService {
       total,
     };
 
+    const dataSetup = await this.getDataSetup();
+
     return {
       departments: departmentDtos,
       meta,
+      dataSetup,
+    };
+  }
+
+  private async getDataSetup(): Promise<DataSetupDto> {
+    const headUserOptions = await this.userRepository
+      .createQueryBuilder('user')
+      .select(['user.id', 'user.name_en', 'user.name_kh'])
+      .where('user.is_active = :isActive', { isActive: true })
+      .andWhere('(user.role = :hodRole)', {
+        hodRole: Role.HEAD_OF_DEPARTMENT,
+      })
+      .orderBy('user.name_en', 'ASC')
+      .getMany();
+
+    // Transform to UserOptionDto
+    const userOptions: UserOptionDto[] = headUserOptions.map((user) => ({
+      id: user.id,
+      name: user.name_kh ? `${user.name_kh} (${user.name_en})` : user.name_en,
+    }));
+
+    return {
+      head_of_departments: userOptions,
     };
   }
 
   async getDepartmentById(id: string): Promise<DepartmentDetailDto> {
+    // Add 'head' to relations to load the HOD information
     const department = await this.departmentRepository.findOne({
       where: { id: parseInt(id) },
+      relations: ['head'], // Add this line to load the head relation
     });
 
     if (!department) {
@@ -122,6 +154,12 @@ export class DepartmentService {
       id: department.id,
       name: department.name,
       description: department.description || undefined,
+      hod_name: department.head
+        ? `${department.head.name_kh}${
+            department.head.name_kh ? ` (${department.head.name_en})` : ''
+          }`
+        : undefined,
+      hod_user_id: department.head?.id,
       created_at: department.createdAt,
       sections: sectionDtos,
     };
@@ -130,7 +168,7 @@ export class DepartmentService {
   async createDepartment(
     createDepartmentDto: CreateDepartmentDto,
   ): Promise<CreateDepartmentResponseDto> {
-    // Check if department name already exists
+    // Check duplicate department name
     const existingDepartment = await this.departmentRepository.findOne({
       where: { name: createDepartmentDto.name },
     });
@@ -140,30 +178,30 @@ export class DepartmentService {
         `Department "${createDepartmentDto.name}" already exists`,
       );
     }
+    let headUser: UserModel | undefined;
 
-    // Validate head_user_id if provided
-    if (createDepartmentDto.head_user_id) {
-      const headUser = await this.userRepository.findOne({
-        where: { id: createDepartmentDto.head_user_id },
+    if (createDepartmentDto.hod_user_id) {
+      const user = await this.userRepository.findOne({
+        where: { id: createDepartmentDto.hod_user_id },
       });
 
-      if (!headUser) {
+      if (!user) {
         throw new NotFoundException(
-          `User with ID ${createDepartmentDto.head_user_id} not found`,
+          `User with ID ${createDepartmentDto.hod_user_id} not found`,
         );
       }
+
+      headUser = user;
     }
 
-    // Create department
     const department = this.departmentRepository.create({
       name: createDepartmentDto.name,
       description: createDepartmentDto.description,
-      head_user_id: createDepartmentDto.head_user_id || null,
+      ...(headUser && { head: headUser }),
     });
 
     const savedDepartment = await this.departmentRepository.save(department);
 
-    // Fetch with relations for response
     const departmentWithHead = await this.departmentRepository.findOne({
       where: { id: savedDepartment.id },
       relations: ['head'],
@@ -180,9 +218,13 @@ export class DepartmentService {
         id: departmentWithHead.id,
         name: departmentWithHead.name,
         description: departmentWithHead.description || undefined,
-        head_user_id: departmentWithHead.head_user_id || undefined,
-        head_name: departmentWithHead.head
-          ? `${departmentWithHead.head.name_en}${departmentWithHead.head.name_kh ? ` (${departmentWithHead.head.name_kh})` : ''}`
+        hod_user_id: departmentWithHead.head?.id,
+        hod_name: departmentWithHead.head
+          ? `${departmentWithHead.head.name_kh}${
+              departmentWithHead.head.name_kh
+                ? ` (${departmentWithHead.head.name_en})`
+                : ''
+            }`
           : undefined,
       },
     };
@@ -192,8 +234,10 @@ export class DepartmentService {
     id: string,
     updateDepartmentDto: UpdateDepartmentDto,
   ): Promise<UpdateDepartmentResponseDto> {
+    const departmentId = parseInt(id, 10);
+
     const department = await this.departmentRepository.findOne({
-      where: { id: parseInt(id) },
+      where: { id: departmentId },
       relations: ['head'],
     });
 
@@ -201,7 +245,6 @@ export class DepartmentService {
       throw new NotFoundException(`Department with ID ${id} not found`);
     }
 
-    // Check if new name conflicts with existing department
     if (
       updateDepartmentDto.name &&
       updateDepartmentDto.name !== department.name
@@ -210,63 +253,51 @@ export class DepartmentService {
         where: { name: updateDepartmentDto.name },
       });
 
-      if (existingDepartment && existingDepartment.id !== parseInt(id)) {
+      if (existingDepartment && existingDepartment.id !== departmentId) {
         throw new BadRequestException(
           `Department "${updateDepartmentDto.name}" already exists`,
         );
       }
     }
 
-    // Validate head_user_id if provided
-    if (updateDepartmentDto.head_user_id !== undefined) {
-      if (updateDepartmentDto.head_user_id) {
-        const headUser = await this.userRepository.findOne({
-          where: { id: updateDepartmentDto.head_user_id },
-        });
+    if (updateDepartmentDto.name !== undefined) {
+      department.name = updateDepartmentDto.name;
+    }
 
-        if (!headUser) {
-          throw new NotFoundException(
-            `User with ID ${updateDepartmentDto.head_user_id} not found`,
-          );
-        }
+    if (updateDepartmentDto.description !== undefined) {
+      department.description = updateDepartmentDto.description;
+    }
+
+    if (updateDepartmentDto.hod_user_id !== undefined) {
+      const headUser = await this.userRepository.findOne({
+        where: { id: updateDepartmentDto.hod_user_id },
+      });
+
+      if (!headUser) {
+        throw new NotFoundException(
+          `User with ID ${updateDepartmentDto.hod_user_id} not found`,
+        );
       }
+
+      department.head = headUser;
     }
 
-    // Update department
-    const updateData: any = {};
-    if (updateDepartmentDto.name !== undefined)
-      updateData.name = updateDepartmentDto.name;
-    if (updateDepartmentDto.description !== undefined)
-      updateData.description = updateDepartmentDto.description;
-    if (updateDepartmentDto.head_user_id !== undefined)
-      updateData.head_user_id = updateDepartmentDto.head_user_id || null;
-
-    if (Object.keys(updateData).length === 0) {
-      throw new BadRequestException('No update data provided');
-    }
-
-    await this.departmentRepository.update(parseInt(id), updateData);
-
-    // Fetch updated department with relations
-    const updatedDepartment = await this.departmentRepository.findOne({
-      where: { id: parseInt(id) },
-      relations: ['head'],
-    });
-
-    if (!updatedDepartment) {
-      throw new Error('Failed to fetch updated department data');
-    }
+    const savedDepartment = await this.departmentRepository.save(department);
 
     return {
       success: true,
       message: 'Department updated successfully',
       data: {
-        id: updatedDepartment.id,
-        name: updatedDepartment.name,
-        description: updatedDepartment.description || undefined,
-        head_user_id: updatedDepartment.head_user_id || undefined,
-        head_name: updatedDepartment.head
-          ? `${updatedDepartment.head.name_en}${updatedDepartment.head.name_kh ? ` (${updatedDepartment.head.name_kh})` : ''}`
+        id: savedDepartment.id,
+        name: savedDepartment.name,
+        description: savedDepartment.description || undefined,
+        hod_user_id: savedDepartment.head?.id,
+        hod_name: savedDepartment.head
+          ? `${savedDepartment.head.name_kh}${
+              savedDepartment.head.name_kh
+                ? ` (${savedDepartment.head.name_en})`
+                : ''
+            }`
           : undefined,
       },
     };
@@ -317,7 +348,6 @@ export class DepartmentService {
     departmentId: string,
     sectionId: string,
   ): Promise<SectionDetailDto> {
-    // Verify department exists
     const department = await this.departmentRepository.findOne({
       where: { id: parseInt(departmentId) },
     });
@@ -355,7 +385,6 @@ export class DepartmentService {
     departmentId: string,
     createSectionDto: CreateSectionDto,
   ): Promise<CreateUpdateSectionResponseDto> {
-    // Verify department exists
     const department = await this.departmentRepository.findOne({
       where: { id: parseInt(departmentId) },
     });
@@ -465,7 +494,6 @@ export class DepartmentService {
     if (updateSectionDto.description !== undefined)
       updateData.description = updateSectionDto.description;
 
-    // Only allow changing department if explicitly provided
     if (updateSectionDto.department_id !== undefined) {
       updateData.department_id = updateSectionDto.department_id;
     }

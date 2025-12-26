@@ -2,14 +2,13 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  OneToOne,
+  ManyToOne, 
   JoinColumn,
 } from 'typeorm';
 import { UserModel } from '../user.model';
 
 @Entity('department')
 export class DepartmentModel {
-  // Use auto-increment integer ID
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -19,11 +18,11 @@ export class DepartmentModel {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ nullable: true })
-  head_user_id: string | null;
-
-  @OneToOne(() => UserModel)
-  @JoinColumn({ name: 'head_user_id' })
+  @ManyToOne(() => UserModel, { nullable: true })
+  @JoinColumn({
+    name: 'hod_user_id',
+    referencedColumnName: 'id',
+  })
   head?: UserModel;
 
   @Column({
