@@ -1,4 +1,19 @@
-import { IsString, IsOptional, IsNotEmpty, IsNumber } from 'class-validator';
+import { IsString, IsOptional, IsNotEmpty, IsNumber, IsUUID } from 'class-validator';
+
+
+// DTO for user options in data setup
+export class UserOptionDto {
+  id: string;
+  name: string;
+  name_kh?: string;
+  name_en: string;
+}
+
+// DTO for setup data (users for head selection, etc.)
+export class DataSetupDto {
+  head_user_options: UserOptionDto[];
+}
+
 
 // DTO for creating a department
 export class CreateDepartmentDto {
@@ -10,8 +25,8 @@ export class CreateDepartmentDto {
   @IsString()
   description?: string;
 
-  @IsOptional()
-  @IsString()
+  @IsNotEmpty()
+  @IsUUID()
   head_user_id?: string;
 }
 
@@ -26,7 +41,7 @@ export class UpdateDepartmentDto {
   description?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID() 
   head_user_id?: string;
 }
 
@@ -92,6 +107,7 @@ export class DepartmentResponseDto {
   message: string;
   data: DepartmentDto[];
   meta: MetaDto;
+  data_setup: DataSetupDto;
 }
 
 // DTO for creating a section

@@ -9,7 +9,6 @@ import { UserModel } from '../user.model';
 
 @Entity('department')
 export class DepartmentModel {
-  // Use auto-increment integer ID
   @PrimaryGeneratedColumn()
   id: number;
 
@@ -19,11 +18,11 @@ export class DepartmentModel {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ nullable: true })
-  head_user_id: string | null;
-
-  @OneToOne(() => UserModel)
-  @JoinColumn({ name: 'head_user_id' })
+  @OneToOne(() => UserModel, { nullable: true })
+  @JoinColumn({
+    name: 'head_user_id',
+    referencedColumnName: 'id', // users.id (UUID)
+  })
   head?: UserModel;
 
   @Column({
@@ -33,3 +32,4 @@ export class DepartmentModel {
   })
   createdAt: Date;
 }
+
