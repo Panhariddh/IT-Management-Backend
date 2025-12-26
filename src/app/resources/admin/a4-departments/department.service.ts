@@ -109,10 +109,9 @@ export class DepartmentService {
       .createQueryBuilder('user')
       .select(['user.id', 'user.name_en', 'user.name_kh'])
       .where('user.is_active = :isActive', { isActive: true })
-      .andWhere('(user.role = :hodRole OR user.role = :teacherRole)', {
+      .andWhere('(user.role = :hodRole)', {
         // Use the actual enum values from your Role enum
-        hodRole: Role.HEAD_OF_DEPARTMENT, // 'Head_Of_Department'
-        teacherRole: Role.TEACHER, // 'Teacher'
+        hodRole: Role.HEAD_OF_DEPARTMENT, 
       })
       .orderBy('user.name_en', 'ASC')
       .getMany();
@@ -120,13 +119,11 @@ export class DepartmentService {
     // Transform to UserOptionDto
     const userOptions: UserOptionDto[] = headUserOptions.map((user) => ({
       id: user.id,
-      name_en: user.name_en,
-      name_kh: user.name_kh,
-      name: user.name_kh ? `${user.name_en} (${user.name_kh})` : user.name_en,
+      name: user.name_kh ? `${user.name_kh} (${user.name_en})` : user.name_en,
     }));
 
     return {
-      head_user_options: userOptions,
+      head_of_departments: userOptions,
     };
   }
 

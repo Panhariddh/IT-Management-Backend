@@ -5,13 +5,11 @@ import { IsString, IsOptional, IsNotEmpty, IsNumber, IsUUID } from 'class-valida
 export class UserOptionDto {
   id: string;
   name: string;
-  name_kh?: string;
-  name_en: string;
 }
 
 // DTO for setup data (users for head selection, etc.)
 export class DataSetupDto {
-  head_user_options: UserOptionDto[];
+  head_of_departments: UserOptionDto[];
 }
 
 

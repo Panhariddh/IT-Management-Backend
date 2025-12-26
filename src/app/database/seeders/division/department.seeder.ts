@@ -54,11 +54,10 @@ export class DepartmentSeeder {
         const department = deptRepo.create({
           name: dept.name,
           description: dept.description,
-          head: headUser, // ✅ assign head_user_id via relation
+          head: headUser, 
         });
 
         await deptRepo.save(department);
-        console.log(`✅ Department "${dept.name}" created with head "${headUser?.name_en}"`);
       }
     }
 
