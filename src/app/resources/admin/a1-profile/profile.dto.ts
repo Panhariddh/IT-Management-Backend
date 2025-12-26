@@ -10,7 +10,8 @@ import {
 } from 'class-validator';
 import { Role } from 'src/app/common/enum/role.enum';
 
-export class UpdateAdminProfileDto {
+// Base DTOs
+export class BaseProfileDto {
   @IsOptional()
   @IsString()
   name_kh?: string;
@@ -52,7 +53,7 @@ export class UpdateAdminProfileDto {
   newPassword?: string;
 }
 
-export class AdminProfileDto {
+export class ProfileDto {
   id: string;
   name_kh: string;
   name_en: string;
@@ -68,10 +69,10 @@ export class AdminProfileDto {
   updated_at: Date;
 }
 
-export class AdminProfileResponseDto {
+export class ProfileResponseDto {
   success: boolean;
   message: string;
-  data: AdminProfileDto;
+  data: ProfileDto;
 }
 
 export class ChangePasswordDto {
@@ -90,14 +91,18 @@ export class ChangePasswordResponseDto {
   message: string;
 }
 
-export class GetAdminProfileByIdDto {
+// Parameter DTOs
+export class GetProfileByIdDto {
+  @IsString()
   id: string;
 }
 
-export class UpdateAdminProfileByIdDto extends UpdateAdminProfileDto {
+export class UpdateProfileByIdDto extends BaseProfileDto {
+  @IsString()
   id: string;
 }
 
 export class ChangePasswordByIdDto extends ChangePasswordDto {
+  @IsString()
   id: string;
 }

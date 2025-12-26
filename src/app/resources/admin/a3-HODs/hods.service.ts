@@ -1,16 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { Repository } from 'typeorm';
 
 import { Role } from 'src/app/common/enum/role.enum';
 // import { HodInfoModel } from 'src/app/database/models/info/hod-info.model';
+import { DepartmentModel } from 'src/app/database/models/division/department.model';
 import { HodInfoModel } from 'src/app/database/models/info/hod-info.model';
 import { UserModel } from 'src/app/database/models/user.model';
-import { DepartmentModel } from 'src/app/database/models/division/department.model';
 
 import { MinioService } from '../../services/minio/minio.service';
-import { CreateHodDto, DataSetupDto, HodDetailDto, HodDto, MetaDto, UpdateHodDto } from './hods.dto';
+import {
+  CreateHodDto,
+  DataSetupDto,
+  HodDetailDto,
+  HodDto,
+  MetaDto,
+  UpdateHodDto,
+} from '../a3-HODs/hods.dto';
 
 interface GetAllHodsParams {
   page: number;
@@ -41,9 +48,7 @@ export class HodService {
     private minioService: MinioService,
   ) {}
 
-  async getAllHods(
-    params: GetAllHodsParams,
-  ): Promise<GetAllHodsResult> {
+  async getAllHods(params: GetAllHodsParams): Promise<GetAllHodsResult> {
     const {
       page,
       limit,
@@ -234,7 +239,7 @@ export class HodService {
       if (id.startsWith('h') && id.length >= 9) {
         const numberPart = id.slice(1); // After "t"
         const currentYear = new Date().getFullYear();
-        
+
         // Check if it starts with current year
         if (id.startsWith(`h${currentYear}`)) {
           const number = parseInt(numberPart.slice(4), 10); // After "t2025"
