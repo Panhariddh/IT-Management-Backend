@@ -1,5 +1,5 @@
 import { Role } from 'src/app/common/enum/role.enum';
-import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('users')
 export class UserModel {
@@ -43,14 +43,30 @@ export class UserModel {
   @Column({ default: true })
   is_active: boolean;
 
-  @Column({ name: 'created_at', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ name: 'password_changed', type: 'boolean', default: false })
+  passwordChanged: boolean;
+
+  @Column({ name: 'password_reset_token', type: 'varchar', nullable: true })
+  passwordResetToken: string | null;
+
+  @Column({ name: 'password_reset_expires', type: 'timestamp', nullable: true })
+  passwordResetExpires: Date | null;
+
+  @Column({ name: 'last_password_change', type: 'timestamp', nullable: true })
+  lastPasswordChange: Date;
+
+  @Column({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   createdAt: Date;
 
-  @Column({ 
-    name: 'updated_at', 
-    type: 'timestamp', 
+  @Column({
+    name: 'updated_at',
+    type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP'
+    onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
 }
