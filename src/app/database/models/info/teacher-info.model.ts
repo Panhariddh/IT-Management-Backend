@@ -1,6 +1,13 @@
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne, JoinColumn, ManyToOne } from 'typeorm';
-import { UserModel } from '../user.model';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { DepartmentModel } from '../division/department.model';
+import { UserModel } from '../user.model';
 
 @Entity('teacher_info')
 export class TeacherInfoModel {
@@ -10,13 +17,13 @@ export class TeacherInfoModel {
   @Column({ unique: true })
   user_id: string;
 
-  @OneToOne(() => UserModel)
+  @OneToOne(() => UserModel, (user) => user.teacherInfo)
   @JoinColumn({ name: 'user_id' })
   user: UserModel;
 
   @Column({ unique: true })
-  teacher_id: string; 
-     
+  teacher_id: string;
+
   @Column({ nullable: true })
   department_id?: number | null;
 

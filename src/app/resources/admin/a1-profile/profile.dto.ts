@@ -53,6 +53,31 @@ export class BaseProfileDto {
   newPassword?: string;
 }
 
+// Student Info
+export class StudentInfoDto {
+  student_id: string;
+  student_year: number;
+  academic_year_id: number;
+}
+
+// Hod Info
+export class HodInfoDto {
+  hod_id: string;
+  departmentInfo: DepartmentInfoDto;
+}
+
+// Teacher Info
+export class TeacherInfoDto {
+  teacher_id: string;
+  departmentInfo: DepartmentInfoDto;
+}
+
+// Department Info
+export class DepartmentInfoDto {
+  department_id: number | null;
+  department_name: string | null;
+}
+
 export class ProfileDto {
   id: string;
   name_kh: string;
@@ -67,6 +92,9 @@ export class ProfileDto {
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
+  studentInfo?: StudentInfoDto;
+  hodInfo?: HodInfoDto;
+  teacherInfo?: TeacherInfoDto;
 }
 
 export class ProfileResponseDto {

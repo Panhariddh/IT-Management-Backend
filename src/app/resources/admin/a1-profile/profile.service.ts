@@ -69,6 +69,15 @@ export class ProfileService {
     try {
       const user = await this.userRepository.findOne({
         where: { id: userId },
+        relations: {
+          studentInfo: true,
+          hodInfo: {
+            department: true,
+          },
+          teacherInfo: {
+            department: true,
+          },
+        },
       });
 
       if (!user) {
@@ -415,6 +424,34 @@ export class ProfileService {
       is_active: user.is_active,
       created_at: user.createdAt,
       updated_at: user.updatedAt,
+
+      studentInfo: user.studentInfo
+        ? {
+            student_id: user.studentInfo.student_id,
+            student_year: user.studentInfo.student_year,
+            academic_year_id: user.studentInfo.academic_year_id,
+          }
+        : undefined,
+
+      hodInfo: user.hodInfo
+        ? {
+            hod_id: user.hodInfo.hod_id,
+            departmentInfo: {
+              department_id: user.hodInfo.department.id,
+              department_name: user.hodInfo.department.name,
+            },
+          }
+        : undefined,
+
+      teacherInfo: user.teacherInfo
+        ? {
+            teacher_id: user.teacherInfo.teacher_id,
+            departmentInfo: {
+              department_id: user.teacherInfo.department?.id ?? null,
+              department_name: user.teacherInfo.department?.name ?? null,
+            },
+          }
+        : undefined,
     };
   }
 }

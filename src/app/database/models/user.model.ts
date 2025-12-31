@@ -1,5 +1,8 @@
 import { Role } from 'src/app/common/enum/role.enum';
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, OneToOne, PrimaryGeneratedColumn } from 'typeorm';
+import { HodInfoModel } from './info/hod-info.model';
+import { StudentInfoModel } from './info/student-info.model';
+import { TeacherInfoModel } from './info/teacher-info.model';
 
 @Entity('users')
 export class UserModel {
@@ -69,4 +72,13 @@ export class UserModel {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
+
+  @OneToOne(() => StudentInfoModel, (student) => student.user)
+  studentInfo?: StudentInfoModel;
+
+  @OneToOne(() => HodInfoModel, (hod) => hod.user)
+  hodInfo?: HodInfoModel;
+
+  @OneToOne(() => TeacherInfoModel, (teacher) => teacher.user)
+  teacherInfo?: TeacherInfoModel;
 }
