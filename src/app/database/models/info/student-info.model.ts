@@ -1,16 +1,16 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  OneToOne,
+  Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { UserModel } from '../user.model';
-import { DepartmentModel } from '../division/department.model';
-import { SectionModel } from '../division/section.model';
-import { ProgramModel } from '../division/program.model';
 import { AcademicYearModel } from '../academic.year.model';
+import { DepartmentModel } from '../division/department.model';
+import { ProgramModel } from '../division/program.model';
+import { SectionModel } from '../division/section.model';
+import { UserModel } from '../user.model';
 
 @Entity('student_info')
 export class StudentInfoModel {
@@ -20,13 +20,13 @@ export class StudentInfoModel {
   @Column({ unique: true })
   user_id: string;
 
-  @OneToOne(() => UserModel)
+  @OneToOne(() => UserModel, (user) => user.studentInfo)
   @JoinColumn({ name: 'user_id' })
   user: UserModel;
 
   @Column({ unique: true })
   student_id: string;
-     
+
   @Column()
   student_year: number;
 
