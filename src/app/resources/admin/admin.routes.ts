@@ -2,7 +2,7 @@ import { Routes } from '@nestjs/core';
 import { StudentModule } from './a1-students/students.module';
 import { TeacherModule } from './a2-teachers/teachers.module';
 
-import { HodModule } from '../admin/a3-HODs/hods.module';
+import { HodModule } from '../admin/a3-hods/hods.module';
 import { DepartmentModule } from './a4-departments/department.module';
 import { AdminModule } from './admin.module';
 

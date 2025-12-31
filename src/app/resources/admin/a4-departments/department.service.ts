@@ -60,7 +60,7 @@ export class DepartmentService {
     const query = this.departmentRepository
       .createQueryBuilder('department')
       .leftJoinAndSelect('department.head', 'head')
-      .orderBy('department.name', 'ASC');
+      .orderBy('department.id', 'ASC');
 
     if (search) {
       const cleanSearch = search.trim().toLowerCase();
@@ -314,33 +314,21 @@ export class DepartmentService {
       throw new NotFoundException(`Department with ID ${id} not found`);
     }
 
-    // Check if department has sections
     const sectionCount = await this.sectionRepository.count({
       where: { department_id: parseInt(id) },
     });
 
-    if (sectionCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete department "${department.name}" because it has ${sectionCount} section(s). Please delete or move the sections first.`,
-      );
-    }
-
-    // Check if department has HODs assigned
-    const hodCount = await this.hodInfoRepository.count({
-      where: { department_id: parseInt(id), is_active: true },
-    });
-
-    if (hodCount > 0) {
-      throw new BadRequestException(
-        `Cannot delete department "${department.name}" because it has ${hodCount} HOD(s) assigned. Please reassign or remove the HODs first.`,
-      );
-    }
-
+    // Delete the department - sections will be automatically deleted due to CASCADE
     await this.departmentRepository.delete(parseInt(id));
+
+    let message = `Department "${department.name}" deleted successfully`;
+    if (sectionCount > 0) {
+      message += ` along with ${sectionCount} section(s)`;
+    }
 
     return {
       success: true,
-      message: `Department "${department.name}" deleted successfully`,
+      message,
     };
   }
 
