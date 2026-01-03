@@ -4,8 +4,8 @@ import { DepartmentModel } from 'src/app/database/models/division/department.mod
 import { HodInfoModel } from 'src/app/database/models/info/hod-info.model';
 import { UserModel } from 'src/app/database/models/user.model';
 import { MinioService } from '../../services/minio/minio.service';
-import { HodController } from '../a3-HODs/hods.controller';
-import { HodService } from '../a3-HODs/hods.service';
+import { HodController } from '../a3-hods/hods.controller';
+import { HodService } from '../a3-hods/hods.service';
 
 @Module({
   imports: [

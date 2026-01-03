@@ -17,7 +17,7 @@ import {
   HodDto,
   MetaDto,
   UpdateHodDto,
-} from '../a3-HODs/hods.dto';
+} from '../a3-hods/hods.dto';
 
 interface GetAllHodsParams {
   page: number;
