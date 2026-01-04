@@ -50,7 +50,6 @@ export class CreateHodDto {
   @IsString()
   password: string;
 
-  @IsNotEmpty()
   @IsOptional()
   @IsNumber()
   department_id?: number;
@@ -100,7 +99,6 @@ export class UpdateHodDto {
   @IsString()
   password?: string;
 
-  @IsNotEmpty()
   @IsOptional()
   @IsNumber()
   department_id?: number;
