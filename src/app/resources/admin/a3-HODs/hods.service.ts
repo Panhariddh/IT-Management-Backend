@@ -278,8 +278,12 @@ export class HodService {
     // Auto-generate email
     const email = `${hodId}@rtc.edu.kh`;
 
-    // Validate foreign key references
-    if (createHodDto.department_id) {
+    // Validate foreign key references ONLY if provided and not null/undefined
+    // Fix: Check for null/undefined explicitly
+    if (
+      createHodDto.department_id !== undefined &&
+      createHodDto.department_id !== null
+    ) {
       await this.validateReferences(createHodDto.department_id);
     }
 
@@ -322,11 +326,11 @@ export class HodService {
 
     const savedUser = await this.userRepository.save(user);
 
-    // Create hod info
+    // Create hod info - IMPORTANT: Pass null if department_id is not provided
     const hodInfo = this.hodInfoRepository.create({
       user_id: savedUser.id,
       hod_id: hodId,
-      department_id: createHodDto.department_id,
+      department_id: createHodDto.department_id || null, // Fix: Pass null if undefined
       is_active: true,
     });
 
@@ -398,8 +402,12 @@ export class HodService {
 
     try {
       // Validate foreign key references if provided
-      if (updateHodDto.department_id) {
-        await this.validateReferences(updateHodDto.department_id);
+      // Fix: Check for null explicitly
+      if (updateHodDto.department_id !== undefined) {
+        if (updateHodDto.department_id !== null) {
+          await this.validateReferences(updateHodDto.department_id);
+        }
+        // If it's null, it means we want to remove the department association
       }
 
       let imageUrl: string | undefined = hodInfo.user.image;
@@ -462,8 +470,11 @@ export class HodService {
       // Update hod info
       const hodInfoUpdateData: any = {};
 
-      if (updateHodDto.department_id !== undefined)
+      // Fix: Handle null value properly
+      if (updateHodDto.department_id !== undefined) {
         hodInfoUpdateData.department_id = updateHodDto.department_id;
+      }
+
       if (updateHodDto.is_active !== undefined)
         hodInfoUpdateData.is_active = updateHodDto.is_active;
 
@@ -643,17 +654,18 @@ export class HodService {
     };
   }
 
-  private async validateReferences(departmentId: number): Promise<void> {
-    if (departmentId) {
-      const department = await this.departmentRepository.findOne({
-        where: { id: departmentId },
-      });
+ private async validateReferences(departmentId: number | undefined | null): Promise<void> {
+  // Fix: Check for truthy value that's a number
+  if (departmentId !== undefined && departmentId !== null && departmentId > 0) {
+    const department = await this.departmentRepository.findOne({
+      where: { id: departmentId },
+    });
 
-      if (!department) {
-        throw new Error(`Department ${departmentId} not found`);
-      }
+    if (!department) {
+      throw new Error(`Department ${departmentId} not found`);
     }
   }
+}
 
   async getGenderOptions(): Promise<string[]> {
     const genders = await this.userRepository

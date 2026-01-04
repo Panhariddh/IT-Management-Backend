@@ -24,8 +24,8 @@ export class HodInfoModel {
   @Column({ unique: true })
   hod_id: string;
 
-  @Column()
-  department_id: number;
+  @Column({ nullable: true }) 
+  department_id: number | null; 
 
   @ManyToOne(() => DepartmentModel, { onDelete: 'RESTRICT' })
   @JoinColumn({ name: 'department_id' })
