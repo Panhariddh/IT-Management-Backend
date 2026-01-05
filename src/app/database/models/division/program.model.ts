@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { DepartmentModel } from './department.model';
 import { DegreeLevel } from 'src/app/common/enum/degree.enum';
@@ -26,12 +27,15 @@ export class ProgramModel {
   @Column('int')
   duration: number;
 
-  @Column()
-  department_id: number;
+  @Column({ nullable: true })
+  department_id?: number;
 
-  @ManyToOne(() => DepartmentModel, { onDelete: 'CASCADE' })
+  @ManyToOne(() => DepartmentModel, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'department_id' })
-  department: DepartmentModel;
+  department?: DepartmentModel;
+
+  @Column({ default: true })
+  is_active: boolean;
 
   @Column({
     name: 'created_at',
@@ -39,4 +43,12 @@ export class ProgramModel {
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 }

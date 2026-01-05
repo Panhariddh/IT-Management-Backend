@@ -176,7 +176,11 @@ export class StudentDetailDto extends StudentDto {
 export class DataSetupDto {
   departments: Array<{ id: number; name: string }>;
   sections: Array<{ id: number; name: string; department_id: number }>;
-  programs: Array<{ id: number; name: string; department_id: number }>;
+  programs: Array<{ 
+    id: number; 
+    name: string; 
+    department_id?: number  
+  }>;
   academic_years: Array<{ id: number; name: string; isActive: boolean }>;
 }
 

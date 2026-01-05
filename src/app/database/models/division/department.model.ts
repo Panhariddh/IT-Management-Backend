@@ -2,8 +2,9 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne, 
+  ManyToOne,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { UserModel } from '../user.model';
 
@@ -18,6 +19,9 @@ export class DepartmentModel {
   @Column({ type: 'text', nullable: true })
   description?: string;
 
+  @Column({ nullable: true })
+  hod_user_id?: number;
+
   @ManyToOne(() => UserModel, { nullable: true })
   @JoinColumn({
     name: 'hod_user_id',
@@ -25,10 +29,21 @@ export class DepartmentModel {
   })
   head?: UserModel;
 
+  @Column({ default: true })
+  is_active: boolean;
+
   @Column({
     name: 'created_at',
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })
   createdAt: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+  })
+  updatedAt: Date;
 }

@@ -7,6 +7,7 @@ import { StudentModule } from './a1-students/students.module';
 import { TeacherModule } from './a2-teachers/teachers.module';
 import { DepartmentModule } from './a4-departments/department.module';
 import { adminRoutes } from './admin.routes';
+import { ProgramModule } from './a5-programs/program.module';
 
 @Module({
   imports: [
@@ -14,6 +15,8 @@ import { adminRoutes } from './admin.routes';
     TeacherModule,
     HodModule,
     DepartmentModule,
+    ProgramModule,
+    ProgramModule,
     RouterModule.register(adminRoutes),
     ProfileModule,
   ],
