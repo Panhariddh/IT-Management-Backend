@@ -6,6 +6,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { DepartmentModel } from './department.model';
+import { DegreeLevel } from 'src/app/common/enum/degree.enum';
 
 @Entity('program')
 export class ProgramModel {
@@ -14,6 +15,16 @@ export class ProgramModel {
 
   @Column()
   name: string;
+
+  @Column({
+    type: 'enum',
+    enum: DegreeLevel,
+    default: DegreeLevel.BACHELOR,
+  })
+  degree_lvl: DegreeLevel;
+
+  @Column('int')
+  duration: number;
 
   @Column()
   department_id: number;
