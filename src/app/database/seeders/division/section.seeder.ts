@@ -1,3 +1,4 @@
+// section.seeder.ts
 import { SectionModel } from '../../models/division/section.model';
 import { DepartmentModel } from '../../models/division/department.model';
 import { AppDataSource } from '../../../config/data-source';
@@ -35,6 +36,57 @@ export class SectionSeeder {
         description: 'Concentrates on computing theory, programming, and system development.',
         departmentName: 'Faculty of Science',
       },
+      // Add these additional sections to match all programs
+      {
+        name: 'A',
+        description: 'Section A',
+        departmentName: 'Faculty of Engineering',
+      },
+      {
+        name: 'B',
+        description: 'Section B',
+        departmentName: 'Faculty of Engineering',
+      },
+      {
+        name: 'A',
+        description: 'Section A',
+        departmentName: 'Faculty of Science',
+      },
+      {
+        name: 'B',
+        description: 'Section B',
+        departmentName: 'Faculty of Science',
+      },
+      {
+        name: 'A',
+        description: 'Section A',
+        departmentName: 'Faculty of Medicine',
+      },
+      {
+        name: 'B',
+        description: 'Section B',
+        departmentName: 'Faculty of Medicine',
+      },
+      {
+        name: 'A',
+        description: 'Section A',
+        departmentName: 'Faculty of Business',
+      },
+      {
+        name: 'B',
+        description: 'Section B',
+        departmentName: 'Faculty of Business',
+      },
+      {
+        name: 'A',
+        description: 'Section A',
+        departmentName: 'Faculty of Social Sciences',
+      },
+      {
+        name: 'B',
+        description: 'Section B',
+        departmentName: 'Faculty of Social Sciences',
+      },
     ];
 
     for (const sec of sections) {
@@ -49,14 +101,11 @@ export class SectionSeeder {
       });
 
       if (!existing) {
-        await repo.save(
-          repo.create({
-            name: sec.name,
-            description: sec.description,
-            department_id: dept.id,
-            department: dept,
-          })
-        );
+        await repo.save({
+          name: sec.name,
+          description: sec.description,
+          department_id: dept.id,
+        });
       }
     }
 

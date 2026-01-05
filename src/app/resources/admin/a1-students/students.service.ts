@@ -279,21 +279,30 @@ export class StudentService {
         select: ['id', 'name', 'department_id'],
         order: { name: 'ASC' },
       }),
-      this.programRepository.find({
-        select: ['id', 'name', 'department_id'],
-        order: { name: 'ASC' },
-      }),
+      // Use query builder to handle nullable department_id
+      this.programRepository
+        .createQueryBuilder('program')
+        .select(['program.id', 'program.name', 'program.department_id'])
+        .orderBy('program.name', 'ASC')
+        .getMany(),
       this.academicYearRepository.find({
         select: ['id', 'name', 'isActive'],
-        order: { name: 'DESC' }, // latest academic year first
+        order: { name: 'DESC' },
       }),
     ]);
+
+    // Map programs to ensure department_id is always a number (or null/undefined)
+    const mappedPrograms = programs.map((program) => ({
+      id: program.id,
+      name: program.name,
+      department_id: program.department_id || undefined, // Convert null/undefined to undefined
+    }));
 
     return {
       departments,
       sections,
-      programs,
-      academic_years: academicYears, // ✅ matches DTO
+      programs: mappedPrograms,
+      academic_years: academicYears,
     };
   }
 
