@@ -7,6 +7,7 @@ import { AdminModule } from './admin.module';
 import { HodModule } from './a3-hods/hods.module';
 import { ProgramModule } from './a5-programs/program.module';
 import { SemesterModule } from './a5-programs/p1-semester/semester.module';
+import { SubjectModule } from './a5-subjects/subject.module';
 
 export const adminRoutes: Routes = [
   {
@@ -38,6 +39,10 @@ export const adminRoutes: Routes = [
             module: SemesterModule,
           },
         ],
+      },
+      {
+        path: 'subjects',
+        module: SubjectModule,
       },
       {
         path: 'profile',
