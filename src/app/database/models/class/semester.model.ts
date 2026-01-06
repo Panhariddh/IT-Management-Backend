@@ -1,7 +1,7 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn, ManyToMany } from 'typeorm';
 import { ProgramModel } from '../division/program.model';
 import { AcademicYearModel } from '../academic.year.model';
-
+import { SubjectModel } from './subject.model';
 
 @Entity('semester')
 export class SemesterModel {
@@ -9,10 +9,10 @@ export class SemesterModel {
   id: number;
 
   @Column()
-  name: string; 
+  name: string;
 
   @Column()
-  semester_number: number; 
+  semester_number: number;
 
   @Column('int')
   year_number: number; // Year 1, Year 2, etc.
@@ -33,4 +33,13 @@ export class SemesterModel {
   @ManyToOne(() => AcademicYearModel)
   @JoinColumn({ name: 'academic_year_id' })
   academic_year: AcademicYearModel;
+
+  @ManyToMany(() => SubjectModel, subject => subject.semesters)
+  subjects: SubjectModel[];
+
+  @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  created_at: Date;
+
+  @Column({ type: 'timestamp', nullable: true, onUpdate: 'CURRENT_TIMESTAMP' })
+  updated_at: Date;
 }
