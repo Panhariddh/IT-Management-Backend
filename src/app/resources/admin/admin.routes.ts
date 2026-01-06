@@ -6,6 +6,7 @@ import { DepartmentModule } from './a4-departments/department.module';
 import { AdminModule } from './admin.module';
 import { HodModule } from './a3-hods/hods.module';
 import { ProgramModule } from './a5-programs/program.module';
+import { SemesterModule } from './a5-programs/p1-semester/semester.module';
 
 export const adminRoutes: Routes = [
   {
@@ -31,6 +32,12 @@ export const adminRoutes: Routes = [
       {
         path: 'programs',
         module: ProgramModule,
+        children: [
+          {
+            path: ':programId/semesters',
+            module: SemesterModule,
+          },
+        ],
       },
       {
         path: 'profile',

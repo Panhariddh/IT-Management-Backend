@@ -8,6 +8,7 @@ import { TeacherModule } from './a2-teachers/teachers.module';
 import { DepartmentModule } from './a4-departments/department.module';
 import { adminRoutes } from './admin.routes';
 import { ProgramModule } from './a5-programs/program.module';
+import { SemesterModule } from './a5-programs/p1-semester/semester.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProgramModule } from './a5-programs/program.module';
     DepartmentModule,
     ProgramModule,
     ProgramModule,
+    SemesterModule,
     RouterModule.register(adminRoutes),
     ProfileModule,
   ],
