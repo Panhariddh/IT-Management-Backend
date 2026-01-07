@@ -168,6 +168,7 @@ export class CreateSubjectResponseDto {
     code: string;
     name: string;
     description: string;
+    total_hours: number;
     credits: number;
     program_name: string;
     program_id: number;
@@ -186,6 +187,7 @@ export class UpdateSubjectResponseDto {
     code: string;
     name: string;
     description: string;
+    total_hours: number;
     credits: number;
     program_name: string;
     program_id: number;

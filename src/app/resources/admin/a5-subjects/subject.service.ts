@@ -48,15 +48,8 @@ export class SubjectService {
   async getAllSubjects(
     params: GetAllSubjectsParams,
   ): Promise<GetAllSubjectsResult> {
-    const {
-      page,
-      limit,
-      programId,
-      search,
-      sortBy,
-      sortOrder,
-      isActive,
-    } = params;
+    const { page, limit, programId, search, sortBy, sortOrder, isActive } =
+      params;
     const skip = (page - 1) * limit;
 
     const query = this.subjectRepository
@@ -212,6 +205,7 @@ export class SubjectService {
       code: createSubjectDto.code,
       name: createSubjectDto.name,
       description: createSubjectDto.description,
+      total_hours: createSubjectDto.total_hours,
       credits: createSubjectDto.credits,
       program: program,
       teacherInfo: teacherInfo,
@@ -269,6 +263,9 @@ export class SubjectService {
       subject.credits = updateSubjectDto.credits;
     if (updateSubjectDto.is_active !== undefined)
       subject.is_active = updateSubjectDto.is_active;
+
+    if (updateSubjectDto.total_hours !== undefined)
+      subject.total_hours = updateSubjectDto.total_hours;
 
     // Update program if provided
     if (updateSubjectDto.program_id !== undefined) {
@@ -366,7 +363,7 @@ export class SubjectService {
       case 'name':
         query.orderBy('subject.name', sortOrder);
         break;
-            case 'total_hours':
+      case 'total_hours':
         query.orderBy('subject.total_hours', sortOrder);
         break;
       case 'credits':
