@@ -27,6 +27,12 @@ export class CreateSubjectDto {
   @IsNotEmpty()
   @IsNumber()
   @Min(1)
+  @Max(64)
+  total_hours: number;
+
+  @IsNotEmpty()
+  @IsNumber()
+  @Min(1)
   @Max(20)
   credits: number;
 
@@ -61,6 +67,12 @@ export class UpdateSubjectDto {
   @IsOptional()
   @IsNumber()
   @Min(1)
+  @Max(64)
+  total_hours: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
   @Max(20)
   credits?: number;
 
@@ -83,10 +95,10 @@ export class UpdateSubjectDto {
 }
 
 export interface TeacherDto {
-  id: string;    
-  code: string;   
-  name: string;   
-  email?: string; 
+  id: string;
+  code: string;
+  name: string;
+  email?: string;
   department?: string;
 }
 
@@ -95,18 +107,19 @@ export class SubjectDto {
   code: string;
   name: string;
   description: string;
+  total_hours: number;
   credits: number;
   program_name: string;
   program_id: number;
   teacher_name?: string;
-  teacher_code?: string;  
+  teacher_code?: string;
   teacher_info_id?: string;
   semester_names: string[];
 }
 
 export class SubjectDetailDto extends SubjectDto {
-  teacher?: TeacherDto; 
-  teachers: TeacherDto[];  
+  teacher?: TeacherDto;
+  teachers: TeacherDto[];
   semesters: Array<{
     id: number;
     name: string;
@@ -160,7 +173,7 @@ export class CreateSubjectResponseDto {
     program_id: number;
     teacher_name?: string;
     teacher_code?: string;
-    teacher_info_id?: string; 
+    teacher_info_id?: string;
     semester_names: string[];
   };
 }
@@ -178,7 +191,7 @@ export class UpdateSubjectResponseDto {
     program_id: number;
     teacher_name?: string;
     teacher_code?: string;
-    teacher_info_id?: string; 
+    teacher_info_id?: string;
     semester_names: string[];
   };
 }

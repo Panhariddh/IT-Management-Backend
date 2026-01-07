@@ -20,7 +20,6 @@ interface GetAllSubjectsParams {
   page: number;
   limit: number;
   programId?: number;
-  semesterId?: number;
   search?: string;
   sortBy: string;
   sortOrder: 'ASC' | 'DESC';
@@ -53,7 +52,6 @@ export class SubjectService {
       page,
       limit,
       programId,
-      semesterId,
       search,
       sortBy,
       sortOrder,
@@ -77,12 +75,6 @@ export class SubjectService {
 
     if (programId) {
       query.andWhere('subject.program_id = :programId', { programId });
-    }
-
-    if (semesterId) {
-      query
-        .innerJoin('subject.semesters', 'semester')
-        .andWhere('semester.id = :semesterId', { semesterId });
     }
 
     if (search) {
@@ -109,6 +101,7 @@ export class SubjectService {
       code: subject.code,
       name: subject.name,
       description: subject.description || '',
+      total_hours: subject.total_hours,
       credits: subject.credits,
       program_name: subject.program?.name || '',
       program_id: subject.program?.id || 0,
@@ -162,6 +155,7 @@ export class SubjectService {
       code: subject.code,
       name: subject.name,
       description: subject.description || '',
+      total_hours: subject.total_hours,
       credits: subject.credits,
       program_name: subject.program?.name || '',
       program_id: subject.program?.id || 0,
@@ -371,6 +365,9 @@ export class SubjectService {
         break;
       case 'name':
         query.orderBy('subject.name', sortOrder);
+        break;
+            case 'total_hours':
+        query.orderBy('subject.total_hours', sortOrder);
         break;
       case 'credits':
         query.orderBy('subject.credits', sortOrder);

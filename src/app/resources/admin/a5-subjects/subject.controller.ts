@@ -38,7 +38,6 @@ export class SubjectController {
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('program') programId?: string,
-    @Query('semester') semesterId?: string,
     @Query('search') search?: string,
     @Query('sort_by') sortBy: string = 'name',
     @Query('sort_order') sortOrder: 'ASC' | 'DESC' = 'ASC',
@@ -48,6 +47,7 @@ export class SubjectController {
       const allowedSortFields = [
         'code',
         'name',
+        'total_hours',
         'credits',
         'program_name',
         'created_at',
@@ -70,7 +70,6 @@ export class SubjectController {
         page: Math.max(1, page),
         limit: Math.min(100, Math.max(1, limit)),
         programId: programId ? parseInt(programId) : undefined,
-        semesterId: semesterId ? parseInt(semesterId) : undefined,
         search,
         sortBy,
         sortOrder,
