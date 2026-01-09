@@ -18,8 +18,14 @@ import { Role } from 'src/app/common/enum/role.enum';
 import { JwtAuthGuard } from 'src/app/common/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/app/common/guards/roles.guard';
 import { ProgramService } from './program.service';
-import { CreateProgramDto, CreateProgramResponseDto, ProgramDetailDto, ProgramsResponseDto, UpdateProgramDto, UpdateProgramResponseDto } from './program.dto';
-
+import {
+  CreateProgramDto,
+  CreateProgramResponseDto,
+  ProgramDetailDto,
+  ProgramsResponseDto,
+  UpdateProgramDto,
+  UpdateProgramResponseDto,
+} from './program.dto';
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,7 +47,6 @@ export class ProgramController {
     try {
       const allowedSortFields = [
         'name',
-        'degree_lvl',
         'duration',
         'department_name',
         'created_at',
@@ -57,10 +62,9 @@ export class ProgramController {
       // Validate degree_lvl if provided
       let validDegreeLvl: string | undefined;
       if (degreeLvl) {
-        const degreeLevels = ['Bachelor', 'High Bachelor', 'Master', 'PHD'];
-        const degreeLvlCapitalized = degreeLvl.charAt(0).toUpperCase() + degreeLvl.slice(1).toLowerCase();
-        if (degreeLevels.includes(degreeLvlCapitalized)) {
-          validDegreeLvl = degreeLvlCapitalized;
+        const parsed = parseInt(degreeLvl, 10);
+        if (!isNaN(parsed) && parsed >= 1 && parsed <= 4) {
+          validDegreeLvl = parsed.toString(); 
         }
       }
 
@@ -183,7 +187,10 @@ export class ProgramController {
         throw new BadRequestException('No update data provided');
       }
 
-      const program = await this.programService.updateProgram(id, updateProgramDto);
+      const program = await this.programService.updateProgram(
+        id,
+        updateProgramDto,
+      );
 
       return {
         success: true,

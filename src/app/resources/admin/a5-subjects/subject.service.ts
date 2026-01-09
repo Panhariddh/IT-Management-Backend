@@ -20,7 +20,6 @@ interface GetAllSubjectsParams {
   page: number;
   limit: number;
   programId?: number;
-  semesterId?: number;
   search?: string;
   sortBy: string;
   sortOrder: 'ASC' | 'DESC';
@@ -49,16 +48,8 @@ export class SubjectService {
   async getAllSubjects(
     params: GetAllSubjectsParams,
   ): Promise<GetAllSubjectsResult> {
-    const {
-      page,
-      limit,
-      programId,
-      semesterId,
-      search,
-      sortBy,
-      sortOrder,
-      isActive,
-    } = params;
+    const { page, limit, programId, search, sortBy, sortOrder, isActive } =
+      params;
     const skip = (page - 1) * limit;
 
     const query = this.subjectRepository
@@ -77,12 +68,6 @@ export class SubjectService {
 
     if (programId) {
       query.andWhere('subject.program_id = :programId', { programId });
-    }
-
-    if (semesterId) {
-      query
-        .innerJoin('subject.semesters', 'semester')
-        .andWhere('semester.id = :semesterId', { semesterId });
     }
 
     if (search) {
@@ -109,6 +94,7 @@ export class SubjectService {
       code: subject.code,
       name: subject.name,
       description: subject.description || '',
+      total_hours: subject.total_hours,
       credits: subject.credits,
       program_name: subject.program?.name || '',
       program_id: subject.program?.id || 0,
@@ -162,6 +148,7 @@ export class SubjectService {
       code: subject.code,
       name: subject.name,
       description: subject.description || '',
+      total_hours: subject.total_hours,
       credits: subject.credits,
       program_name: subject.program?.name || '',
       program_id: subject.program?.id || 0,
@@ -218,6 +205,7 @@ export class SubjectService {
       code: createSubjectDto.code,
       name: createSubjectDto.name,
       description: createSubjectDto.description,
+      total_hours: createSubjectDto.total_hours,
       credits: createSubjectDto.credits,
       program: program,
       teacherInfo: teacherInfo,
@@ -275,6 +263,9 @@ export class SubjectService {
       subject.credits = updateSubjectDto.credits;
     if (updateSubjectDto.is_active !== undefined)
       subject.is_active = updateSubjectDto.is_active;
+
+    if (updateSubjectDto.total_hours !== undefined)
+      subject.total_hours = updateSubjectDto.total_hours;
 
     // Update program if provided
     if (updateSubjectDto.program_id !== undefined) {
@@ -371,6 +362,9 @@ export class SubjectService {
         break;
       case 'name':
         query.orderBy('subject.name', sortOrder);
+        break;
+      case 'total_hours':
+        query.orderBy('subject.total_hours', sortOrder);
         break;
       case 'credits':
         query.orderBy('subject.credits', sortOrder);

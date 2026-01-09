@@ -281,9 +281,6 @@ export class ProgramService {
       case 'name':
         query.orderBy('program.name', sortOrder);
         break;
-      case 'degree_lvl':
-        query.orderBy('program.degree_lvl', sortOrder);
-        break;
       case 'duration':
         query.orderBy('program.duration', sortOrder);
         break;
