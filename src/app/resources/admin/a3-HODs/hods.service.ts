@@ -17,7 +17,7 @@ import {
   HodDto,
   MetaDto,
   UpdateHodDto,
-} from '../a3-hods/hods.dto';
+} from '../a3-HODs/hods.dto';
 
 interface GetAllHodsParams {
   page: number;
@@ -654,18 +654,24 @@ export class HodService {
     };
   }
 
- private async validateReferences(departmentId: number | undefined | null): Promise<void> {
-  // Fix: Check for truthy value that's a number
-  if (departmentId !== undefined && departmentId !== null && departmentId > 0) {
-    const department = await this.departmentRepository.findOne({
-      where: { id: departmentId },
-    });
+  private async validateReferences(
+    departmentId: number | undefined | null,
+  ): Promise<void> {
+    // Fix: Check for truthy value that's a number
+    if (
+      departmentId !== undefined &&
+      departmentId !== null &&
+      departmentId > 0
+    ) {
+      const department = await this.departmentRepository.findOne({
+        where: { id: departmentId },
+      });
 
-    if (!department) {
-      throw new Error(`Department ${departmentId} not found`);
+      if (!department) {
+        throw new Error(`Department ${departmentId} not found`);
+      }
     }
   }
-}
 
   async getGenderOptions(): Promise<string[]> {
     const genders = await this.userRepository
