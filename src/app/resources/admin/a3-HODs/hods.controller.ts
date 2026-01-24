@@ -28,8 +28,8 @@ import {
   HodsResponseDto,
   UpdateHodDto,
   UpdateHodResponseDto,
-} from '../a3-hods/hods.dto';
-import { HodService } from '../a3-hods/hods.service';
+} from '../a3-HODs/hods.dto';
+import { HodService } from '../a3-HODs/hods.service';
 
 @Controller()
 @UseGuards(JwtAuthGuard, RolesGuard)
