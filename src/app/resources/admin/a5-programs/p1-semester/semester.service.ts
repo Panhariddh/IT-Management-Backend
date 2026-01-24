@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm'; 
+import { In, Repository } from 'typeorm'; 
 
 import { ProgramModel } from 'src/app/database/models/division/program.model';
 import { AcademicYearModel } from 'src/app/database/models/academic.year.model';
@@ -17,6 +17,7 @@ import {
   SemesterDataSetupDto,
 } from './semester.dto';
 import { SemesterModel } from 'src/app/database/models/class/semester.model';
+import { SubjectModel } from 'src/app/database/models/class/subject.model';
 
 
 interface GetAllSemestersResult {
@@ -42,6 +43,8 @@ export class SemesterService {
     private programRepository: Repository<ProgramModel>,
     @InjectRepository(AcademicYearModel)
     private academicYearRepository: Repository<AcademicYearModel>,
+    @InjectRepository(SubjectModel)
+    private subjectRepository: Repository<SubjectModel>,
   ) {}
 
 async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult> {
@@ -49,6 +52,7 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
     .createQueryBuilder('semester')
     .leftJoinAndSelect('semester.program', 'program')
     .leftJoinAndSelect('semester.academic_year', 'academic_year')
+    .leftJoinAndSelect('semester.subjects', 'subjects') // Join subjects
     .where('semester.program_id = :programId', { programId }) 
     .andWhere('semester.is_active = :isActive', { isActive: true })
     .orderBy('semester.year_number', 'ASC')
@@ -68,9 +72,10 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
     program_name: semester.program.name,
     academic_year_id: semester.academic_year.id,
     academic_year_name: semester.academic_year.name,
+    subjects_count: semester.subjects?.length || 0, // Add subject count
   }));
 
-  const dataSetup = await this.getDataSetup();
+  const dataSetup = await this.getDataSetup(programId);
 
   const meta: SemesterMetaDto = {
     page: 1,
@@ -88,7 +93,7 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
   async getSemesterById(id: string): Promise<SemesterDetailDto> {
     const semester = await this.semesterRepository.findOne({
       where: { id: parseInt(id) },
-      relations: ['program', 'academic_year'],
+      relations: ['program', 'academic_year', 'subjects'],
     });
 
     if (!semester) {
@@ -107,6 +112,12 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       program_name: semester.program.name,
       academic_year_id: semester.academic_year.id,
       academic_year_name: semester.academic_year.name,
+      subjects: semester.subjects?.map((subject) => ({
+        id: subject.id,
+        code: subject.code,
+        name: subject.name,
+        credits: subject.credits,
+      })) || [],
     };
   }
 
@@ -136,7 +147,7 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
   }
 
   async createSemester(
-    createSemesterData: CreateSemesterData, 
+    createSemesterData: CreateSemesterData,
   ): Promise<SemesterDetailDto> {
     // Validate program exists
     const program = await this.programRepository.findOne({
@@ -149,6 +160,7 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       );
     }
 
+    // Validate academic year exists
     const academicYear = await this.academicYearRepository.findOne({
       where: { id: createSemesterData.academic_year_id },
     });
@@ -159,8 +171,30 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       );
     }
 
+    // Validate and fetch subjects if provided
+    let subjects: SubjectModel[] = [];
+    if (createSemesterData.subject_ids && createSemesterData.subject_ids.length > 0) {
+      // Fetch subjects and validate they belong to the same program
+      subjects = await this.subjectRepository.find({
+        where: { 
+          id: In(createSemesterData.subject_ids),
+          program: { id: createSemesterData.program_id }, // Ensure subjects belong to same program
+          is_active: true,
+        },
+      });
+
+      if (subjects.length !== createSemesterData.subject_ids.length) {
+        const foundIds = subjects.map(s => s.id);
+        const missingIds = createSemesterData.subject_ids.filter(id => !foundIds.includes(id));
+        throw new BadRequestException(
+          `Some subjects not found, don't belong to this program, or are inactive. Missing IDs: ${missingIds.join(', ')}`,
+        );
+      }
+    }
+
     await this.checkForDateOverlaps(createSemesterData);
 
+    // Create semester
     const semesterData: Partial<SemesterModel> = {
       name: createSemesterData.name,
       semester_number: createSemesterData.semester_number,
@@ -173,34 +207,15 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
           : true,
       program: program,
       academic_year: academicYear,
+      subjects: subjects, // Assign subjects
     };
 
     const semester = this.semesterRepository.create(semesterData);
     const savedSemester = await this.semesterRepository.save(semester);
 
-    const completeSemester = await this.semesterRepository.findOne({
-      where: { id: savedSemester.id },
-      relations: ['program', 'academic_year'],
-    });
-
-    if (!completeSemester) {
-      throw new Error('Failed to fetch created semester data');
-    }
-
-    return {
-      id: completeSemester.id.toString(),
-      name: completeSemester.name,
-      semester_number: completeSemester.semester_number,
-      year_number: completeSemester.year_number,
-      start_date: completeSemester.start_date,
-      end_date: completeSemester.end_date,
-      is_active: completeSemester.is_active,
-      program_id: completeSemester.program.id,
-      program_name: completeSemester.program.name,
-      academic_year_id: completeSemester.academic_year.id,
-      academic_year_name: completeSemester.academic_year.name,
-    };
+    return this.getSemesterById(savedSemester.id.toString());
   }
+
 
   async updateSemester(
     id: string,
@@ -208,13 +223,17 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
   ): Promise<SemesterDetailDto> {
     const semester = await this.semesterRepository.findOne({
       where: { id: parseInt(id) },
-      relations: ['program', 'academic_year'],
+      relations: ['program', 'academic_year', 'subjects'], // Add 'subjects' to relations
     });
 
     if (!semester) {
       throw new NotFoundException(`Semester with ID ${id} not found`);
     }
 
+    // Get the program ID - either from update data or existing semester
+    const programId = updateSemesterData.program_id || semester.program.id;
+
+    // Validate program if changing
     if (
       updateSemesterData.program_id &&
       updateSemesterData.program_id !== semester.program.id
@@ -231,6 +250,7 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       semester.program = program;
     }
 
+    // Validate academic year if changing
     if (updateSemesterData.academic_year_id) {
       const academicYear = await this.academicYearRepository.findOne({
         where: { id: updateSemesterData.academic_year_id },
@@ -244,10 +264,44 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       semester.academic_year = academicYear;
     }
 
-    if (updateSemesterData.start_date || updateSemesterData.end_date) {
-      await this.checkForDateOverlaps(updateSemesterData, id);
+    // Validate and update subjects if provided
+    if (updateSemesterData.subject_ids !== undefined) {
+      if (updateSemesterData.subject_ids.length === 0) {
+        // Clear subjects if empty array is provided
+        semester.subjects = [];
+      } else {
+        // Fetch and validate subjects
+        const subjects = await this.subjectRepository.find({
+          where: { 
+            id: In(updateSemesterData.subject_ids),
+            program: { id: programId }, // Ensure subjects belong to same program
+            is_active: true,
+          },
+        });
+
+        if (subjects.length !== updateSemesterData.subject_ids.length) {
+          const foundIds = subjects.map(s => s.id);
+          const missingIds = updateSemesterData.subject_ids.filter(id => !foundIds.includes(id));
+          throw new BadRequestException(
+            `Some subjects not found, don't belong to this program, or are inactive. Missing IDs: ${missingIds.join(', ')}`,
+          );
+        }
+
+        semester.subjects = subjects;
+      }
     }
 
+    // Check for date overlaps (pass programId if available)
+    const checkData: UpdateSemesterData & { program_id?: number } = {
+      ...updateSemesterData,
+      program_id: programId,
+    };
+    
+    if (updateSemesterData.start_date || updateSemesterData.end_date) {
+      await this.checkForDateOverlaps(checkData, id);
+    }
+
+    // Update other fields
     if (updateSemesterData.name !== undefined) {
       semester.name = updateSemesterData.name;
     }
@@ -267,11 +321,13 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       semester.is_active = updateSemesterData.is_active;
     }
 
-    const updatedSemester = await this.semesterRepository.save(semester);
+    semester.updated_at = new Date();
+    await this.semesterRepository.save(semester);
 
+    // Fetch complete updated semester with subjects
     const completeSemester = await this.semesterRepository.findOne({
-      where: { id: updatedSemester.id },
-      relations: ['program', 'academic_year'],
+      where: { id: parseInt(id) },
+      relations: ['program', 'academic_year', 'subjects'],
     });
 
     if (!completeSemester) {
@@ -290,6 +346,12 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       program_name: completeSemester.program.name,
       academic_year_id: completeSemester.academic_year.id,
       academic_year_name: completeSemester.academic_year.name,
+      subjects: completeSemester.subjects?.map((subject) => ({
+        id: subject.id,
+        code: subject.code,
+        name: subject.name,
+        credits: subject.credits,
+      })) || [],
     };
   }
 
@@ -299,12 +361,17 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
   }> {
     const semester = await this.semesterRepository.findOne({
       where: { id: parseInt(id) },
-      relations: ['program'],
+      relations: ['program', 'subjects'], // Add subjects
     });
 
     if (!semester) {
       throw new NotFoundException(`Semester with ID ${id} not found`);
     }
+
+    // Clear subjects before soft delete to avoid foreign key constraints
+    // This is important for ManyToMany relationships
+    semester.subjects = [];
+    await this.semesterRepository.save(semester);
 
     // Soft delete the semester
     semester.is_active = false;
@@ -406,7 +473,7 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
     }
   }
 
-  private async getDataSetup(): Promise<SemesterDataSetupDto> {
+  private async getDataSetup(programId?: number): Promise<SemesterDataSetupDto> {
     const programs = await this.programRepository
       .createQueryBuilder('program')
       .select(['program.id', 'program.name'])
@@ -425,10 +492,21 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
       .orderBy('academic_year.name', 'DESC')
       .getMany();
 
+    // Get subjects for the program if programId is provided
+    let subjects: Array<{ id: number; code: string; name: string; credits: number }> = [];
+    if (programId) {
+      subjects = await this.subjectRepository
+        .createQueryBuilder('subject')
+        .select(['subject.id', 'subject.code', 'subject.name', 'subject.credits'])
+        .where('subject.program_id = :programId', { programId })
+        .andWhere('subject.is_active = :isActive', { isActive: true })
+        .orderBy('subject.name', 'ASC')
+        .getMany();
+    }
+
     return {
       programs,
       academic_years: academicYears.map((year) => {
-        // Parse start and end year from the name format "YYYY-YYYY"
         const years = year.name.split('-');
         return {
           id: year.id,
@@ -437,6 +515,25 @@ async getAllSemestersByProgram(programId: number): Promise<GetAllSemestersResult
           end_year: years.length >= 2 ? parseInt(years[1]) : undefined,
         };
       }),
+      subjects: subjects.map(subject => ({
+        id: subject.id,
+        code: subject.code,
+        name: subject.name,
+        credits: subject.credits,
+      })),
     };
   }
+
+  // Helper method to get subjects for a program
+  async getSubjectsByProgram(programId: number) {
+    return await this.subjectRepository.find({
+      where: {
+        program: { id: programId },
+        is_active: true,
+      },
+      select: ['id', 'code', 'name', 'credits'],
+      order: { name: 'ASC' },
+    });
+  }
+
 }

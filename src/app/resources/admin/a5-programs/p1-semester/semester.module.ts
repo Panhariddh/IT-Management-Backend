@@ -7,12 +7,15 @@ import { SemesterController } from './semester.controller';
 import { SemesterService } from './semester.service';
 import { SemesterModel } from 'src/app/database/models/class/semester.model';
 
+import { SubjectModel } from 'src/app/database/models/class/subject.model';
+
 @Module({
   imports: [
     TypeOrmModule.forFeature([
       SemesterModel,
       ProgramModel,
       AcademicYearModel,
+      SubjectModel,
     ]),
   ],
   controllers: [SemesterController],

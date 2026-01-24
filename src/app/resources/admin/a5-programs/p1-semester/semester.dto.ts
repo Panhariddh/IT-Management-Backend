@@ -7,6 +7,7 @@ import {
   IsOptional,
   Min,
   Max,
+  IsArray,
 } from 'class-validator';
 
 export class CreateSemesterDto {
@@ -41,6 +42,10 @@ export class CreateSemesterDto {
   @IsBoolean()
   is_active?: boolean;
   
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  subject_ids?: number[];
   // REMOVED: program_id - will come from URL parameter
 }
 
@@ -75,6 +80,11 @@ export class UpdateSemesterDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  subject_ids?: number[];
   
   // REMOVED: program_id - cannot change program via this endpoint
 }
@@ -90,13 +100,21 @@ export class SemesterDto {
   program_name: string;
   academic_year_id: number;
   academic_year_name: string;
+  subjects_count?: number; // Add this
 }
 
 export class SemesterDetailDto extends SemesterDto {
   created_at?: Date;
   updated_at?: Date;
+  subjects?: SemesterSubjectDetailDto[];
 }
 
+interface SemesterSubjectDetailDto {
+  id: number;
+  code: string;
+  name: string;
+  credits: number;
+}
 export class SemesterMetaDto {
   page: number;
   limit: number;
@@ -114,6 +132,13 @@ export class SemesterDataSetupDto {
     start_year?: number; 
     end_year?: number; 
   }>;
+  subjects: Array<{
+    id: number;
+    code: string;
+    name: string;
+    credits: number;
+  }>;
+
 }
 
 export class SemestersResponseDto {
