@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Request,
   UseGuards,
   UsePipes,
   ValidationPipe,
@@ -35,8 +36,12 @@ export class ScheduleController {
 
   @Get()
   @Roles(Role.ADMIN, Role.HEAD_OF_DEPARTMENT, Role.TEACHER, Role.STUDENT)
-  async findAll() {
-    return await this.scheduleService.findAll();
+  async findAll(@Request() req) {
+    // Extract user info from JWT token
+    const userRole = req.user?.role;
+    const userId = req.user?.id;
+
+    return await this.scheduleService.findAll(userRole, userId);
   }
 
   @Get(':id')

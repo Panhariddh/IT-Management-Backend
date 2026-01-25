@@ -10,6 +10,7 @@ import { Role } from 'src/app/common/enum/role.enum';
 import { ClassModel } from 'src/app/database/models/class/class.model';
 import { RoomModel } from 'src/app/database/models/class/room.model';
 import { ScheduleModel } from 'src/app/database/models/class/schedule.model';
+import { StudentInfoModel } from 'src/app/database/models/info/student-info.model';
 import { Repository } from 'typeorm';
 import { CreateScheduleDto, UpdateScheduleDto } from './schedule.dto';
 
@@ -22,6 +23,8 @@ export class ScheduleService {
     private classRepository: Repository<ClassModel>,
     @InjectRepository(RoomModel)
     private roomRepository: Repository<RoomModel>,
+    @InjectRepository(StudentInfoModel)
+    private studentInfoRepository: Repository<StudentInfoModel>,
   ) {}
 
   async create(createScheduleDto: CreateScheduleDto): Promise<ScheduleModel> {
@@ -78,7 +81,65 @@ export class ScheduleService {
     return await this.scheduleRepository.save(schedule);
   }
 
-  async findAll(userRole?: Role): Promise<ScheduleModel[]> {
+  // For authenticated student - get only their schedules
+  async findStudentSchedules(studentUserId: string): Promise<ScheduleModel[]> {
+    // Find student info
+    const studentInfo = await this.studentInfoRepository.findOne({
+      where: {
+        user_id: studentUserId,
+        is_active: true,
+      },
+      relations: ['program', 'section', 'academicYear'],
+    });
+
+    if (!studentInfo) {
+      throw new NotFoundException('Student information not found');
+    }
+
+    // Find classes that belong to this student's program
+    const classes = await this.classRepository
+      .createQueryBuilder('class')
+      .leftJoinAndSelect('class.semester', 'semester')
+      .where('class.is_active = :isActive', { isActive: true })
+      .andWhere('semester.program_id = :programId', {
+        programId: studentInfo.program_id,
+      })
+      .getMany();
+
+    const classIds = classes.map((cls) => cls.id);
+
+    if (classIds.length === 0) {
+      return [];
+    }
+
+    // Get schedules for these classes
+    return await this.scheduleRepository
+      .createQueryBuilder('schedule')
+      .leftJoinAndSelect('schedule.class', 'class')
+      .leftJoinAndSelect('schedule.room', 'room')
+      .leftJoinAndSelect('class.subject', 'subject')
+      .where('schedule.is_active = :isActive', { isActive: true })
+      .andWhere('schedule.class_id IN (:...classIds)', { classIds })
+      .orderBy('schedule.day_of_week', 'ASC')
+      .addOrderBy('schedule.start_time', 'ASC')
+      .getMany();
+  }
+  async findAll(
+    userRole?: Role,
+    studentUserId?: string,
+  ): Promise<ScheduleModel[]> {
+    // If student is logged in, return only their schedules
+    if (userRole === Role.STUDENT && studentUserId) {
+      try {
+        return await this.findStudentSchedules(studentUserId);
+      } catch (error) {
+        // If student info not found, return empty array or handle differently
+        console.error('Error fetching student schedules:', error);
+        return [];
+      }
+    }
+
+    // For admin/teacher, return all active schedules
     const query = this.scheduleRepository
       .createQueryBuilder('schedule')
       .leftJoinAndSelect('schedule.class', 'class')
@@ -86,13 +147,8 @@ export class ScheduleService {
       .orderBy('schedule.day_of_week', 'ASC')
       .addOrderBy('schedule.start_time', 'ASC');
 
-    // Students can only see active schedules
-    if (userRole === Role.STUDENT) {
-      query.where('schedule.is_active = :isActive', { isActive: true });
-    } else {
-      // Admin, HOD, Teacher can see all active schedules by default
-      query.where('schedule.is_active = :isActive', { isActive: true });
-    }
+    // Default to showing only active schedules
+    query.where('schedule.is_active = :isActive', { isActive: true });
 
     return await query.getMany();
   }
