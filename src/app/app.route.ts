@@ -3,6 +3,7 @@ import { RouterModule } from '@nestjs/core';
 import { AuthModule } from 'src/app/resources/auth/auth.module';
 import { AdminModule } from './resources/admin/admin.module';
 import { MinioModule } from './resources/services/minio/minio.module';
+import { HodModule } from './resources/hod/hod.module';
 
 @Module({
   imports: [
@@ -10,6 +11,10 @@ import { MinioModule } from './resources/services/minio/minio.module';
       {
         path: 'admin',
         module: AdminModule,
+      },
+       {
+        path: 'hod',
+        module: HodModule,
       },
       {
         path: 'auth',
