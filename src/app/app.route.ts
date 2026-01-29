@@ -4,6 +4,7 @@ import { AuthModule } from 'src/app/resources/auth/auth.module';
 import { AdminModule } from './resources/admin/admin.module';
 import { MinioModule } from './resources/services/minio/minio.module';
 import { HodModule } from './resources/hod/hod.module';
+import { TeacherModule } from './resources/teacher/teacher.module';
 
 @Module({
   imports: [
@@ -12,9 +13,13 @@ import { HodModule } from './resources/hod/hod.module';
         path: 'admin',
         module: AdminModule,
       },
-       {
+      {
         path: 'hod',
         module: HodModule,
+      },
+      {
+        path: 'teacher',
+        module: TeacherModule,
       },
       {
         path: 'auth',

@@ -7,6 +7,8 @@ import { AppRoutingModule } from './app.route';
 import { AdminModule } from './resources/admin/admin.module';
 import { MinioModule } from './resources/services/minio/minio.module';
 import { HodModule } from './resources/hod/hod.module';
+import { TeacherModule } from './resources/teacher/teacher.module';
+
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { HodModule } from './resources/hod/hod.module';
     AuthModule,
     HodModule,
     AdminModule,
+    TeacherModule,
     MinioModule,
     AppRoutingModule,
   ],
